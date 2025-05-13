@@ -23,23 +23,31 @@ import Sidebar from './components/layout/Sidebar.vue'
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
 .content {
   display: flex;
   flex: 1;
   width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .sidebar-component {
   width: 250px;
   transition: all 0.3s ease;
+  margin: 0;
+  padding: 0;
 }
 
 .main-content {
   flex: 1;
   padding: 20px;
   overflow-x: hidden;
+  margin: 0;
 }
 
 /* 响应式布局 */

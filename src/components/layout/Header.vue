@@ -39,6 +39,9 @@ const closeMenu = () => {
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  height: 8%;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .nav {
@@ -84,6 +87,7 @@ const closeMenu = () => {
     transform: translateY(-150%);
     transition: transform 0.3s ease-in-out;
     z-index: 100;
+    margin: 0;
   }
 
   .nav-open {

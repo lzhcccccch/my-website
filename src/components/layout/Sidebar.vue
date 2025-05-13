@@ -19,7 +19,10 @@
 .sidebar {
   background-color: #f5f5f5;
   padding: 1rem;
+  width: 15%;
   height: 100%;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .sidebar-content {
@@ -30,6 +33,7 @@
 .sidebar ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .sidebar li {
@@ -54,6 +58,7 @@
 @media (max-width: 768px) {
   .sidebar {
     padding: 0.5rem;
+    width: 100%;
   }
 
   .sidebar-content {
