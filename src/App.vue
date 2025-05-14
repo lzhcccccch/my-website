@@ -12,12 +12,25 @@
 import { onMounted } from 'vue'
 import AppLayout from './components/layout/DefaultLayout.vue'
 import { useAuthStore } from './stores/auth'
+import api from './services/api.js' // 假设你有一个 API 实例
 
 const authStore = useAuthStore()
 
-onMounted(() => {
+onMounted(async () => {
   // 初始化认证状态
-  authStore.init()
+  const token = localStorage.getItem('token')
+
+  if (token) {
+    try {
+      // 尝试获取当前用户信息
+      const response = await api.get('/auth/me')
+      authStore.setUser(response.data)
+    } catch (err) {
+      console.error('获取用户信息失败:', err)
+      // 如果获取用户信息失败，清除认证状态
+      authStore.logout()
+    }
+  }
 })
 </script>
 

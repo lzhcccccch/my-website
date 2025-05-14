@@ -8,12 +8,12 @@
         <p>收集和整理你喜欢的网站链接</p>
       </div>
 
-      <div class="feature-card" @click="navigateTo('/mood-journal')">
+      <div class="feature-card" @click="navigateTo('/note')">
         <h2>心情随想录</h2>
         <p>记录每一天的心情和想法</p>
       </div>
 
-      <div class="feature-card" @click="navigateTo('/word-cards')">
+      <div class="feature-card" @click="navigateTo('/word')">
         <h2>单词卡片</h2>
         <p>创建和学习单词卡片（即将推出）</p>
       </div>

@@ -1,19 +1,17 @@
 import api from './api'
 
-export const authService = {
-    login(credentials) {
-        return api.post('/auth/login', credentials)
-    },
+export function login(credentials) {
+    return api.post('/auth/login', credentials)
+}
 
-    register(userData) {
-        return api.post('/auth/register', userData)
-    },
+export function register(userData) {
+    return api.post('/auth/register', userData)
+}
 
-    getCurrentUser() {
-        return api.get('/auth/me')
-    },
+export function getCurrentUser() {
+    return api.get('/auth/me')
+}
 
-    logout() {
-        return api.post('/auth/logout')
-    }
+export function logout() {
+    return api.post('/auth/logout')
 }
