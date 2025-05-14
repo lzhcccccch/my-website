@@ -1,101 +1,142 @@
 <template>
-  <header class="header">
+  <header class="app-header">
     <div class="logo">
-      <h1>我的个人网站</h1>
+      <router-link to="/">栈外听风</router-link>
     </div>
-    <nav class="nav" :class="{ 'nav-open': menuOpen }">
-      <router-link to="/" @click="closeMenu">首页</router-link>
-      <router-link to="/thoughts" @click="closeMenu">心情随想</router-link>
-      <router-link to="/word-cards" @click="closeMenu">单词卡片</router-link>
+
+    <nav class="nav-menu">
+      <ul>
+        <li>
+          <router-link to="/">首页</router-link>
+        </li>
+        <li >
+          <router-link to="/navigation">导航站</router-link>
+        </li>
+        <li >
+          <router-link to="/note">心情随想录</router-link>
+        </li>
+        <li >
+          <router-link to="/word">单词卡片</router-link>
+        </li>
+      </ul>
     </nav>
-    <div class="menu-toggle" @click="toggleMenu">
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
+
+    <div class="user-actions">
+      <template v-if="isLoggedIn">
+        <span class="username">{{ currentUser?.name || '用户' }}</span>
+        <button class="logout-btn" @click="logout">退出登录</button>
+      </template>
+      <template v-else>
+        <router-link to="/login" class="login-btn">登录</router-link>
+        <router-link to="/register" class="register-btn">注册</router-link>
+      </template>
     </div>
   </header>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed } from 'vue'
+import { useAuthStore } from '../../stores/auth'
+import { useAuth } from '../../composables/useAuth'
 
-const menuOpen = ref(false)
+const authStore = useAuthStore()
+const { logout } = useAuth()
 
-const toggleMenu = () => {
-  menuOpen.value = !menuOpen.value
-}
-
-const closeMenu = () => {
-  menuOpen.value = false
-}
+const isLoggedIn = computed(() => authStore.isAuthenticated)
+const currentUser = computed(() => authStore.user)
 </script>
 
 <style scoped>
-.header {
-  background-color: #333;
-  color: white;
-  padding: 1rem;
+.app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  height: 8%;
-  margin: 0;
-  box-sizing: border-box;
-}
-
-.nav {
-  display: flex;
-  gap: 1rem;
-}
-
-.nav a {
-  color: white;
-  text-decoration: none;
-  padding: 0.5rem;
-}
-
-.nav a:hover {
-  text-decoration: underline;
-}
-
-.menu-toggle {
-  display: none;
-  flex-direction: column;
-  cursor: pointer;
-}
-
-.bar {
-  width: 25px;
-  height: 3px;
+  padding: 1rem 2rem;
   background-color: white;
-  margin: 3px 0;
-  transition: 0.4s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* 响应式导航 */
-@media (max-width: 768px) {
-  .nav {
-    position: absolute;
-    top: 60px;
-    left: 0;
-    flex-direction: column;
-    background-color: #333;
-    width: 100%;
-    align-items: center;
-    padding: 1rem 0;
-    transform: translateY(-150%);
-    transition: transform 0.3s ease-in-out;
-    z-index: 100;
-    margin: 0;
-  }
+.logo a {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  text-decoration: none;
+}
 
-  .nav-open {
-    transform: translateY(0);
-  }
+.nav-menu ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 
-  .menu-toggle {
-    display: flex;
-  }
+.nav-menu li {
+  margin-right: 1.5rem;
+}
+
+.nav-menu a {
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.nav-menu a:hover,
+.nav-menu a.router-link-active {
+  color: #4caf50;
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+}
+
+.username {
+  margin-right: 1rem;
+  font-weight: 500;
+}
+
+.logout-btn {
+  background-color: transparent;
+  border: 1px solid #f44336;
+  color: #f44336;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.logout-btn:hover {
+  background-color: #f44336;
+  color: white;
+}
+
+.login-btn,
+.register-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  margin-left: 1rem;
+}
+
+.login-btn {
+  background-color: transparent;
+  border: 1px solid #2196f3;
+  color: #2196f3;
+}
+
+.login-btn:hover {
+  background-color: #2196f3;
+  color: white;
+}
+
+.register-btn {
+  background-color: #4caf50;
+  color: white;
+  border: 1px solid #4caf50;
+}
+
+.register-btn:hover {
+  background-color: #45a049;
 }
 </style>
