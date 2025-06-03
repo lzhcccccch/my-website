@@ -12,6 +12,7 @@ const Login = () => import('../views/auth/Login.vue')
 const Register = () => import('../views/auth/Register.vue')
 const Navigation = () => import('../views/navigation/Index.vue')
 const Note = () => import('../views/note/Index.vue')
+const Thoughts = () => import('../views/Thoughts.vue')
 const Word = () => import('../views/word/Index.vue')
 
 // 路由配置
@@ -62,6 +63,16 @@ const routes = [
         meta: {
             title: '心情随想录',
             description: '记录每一天的心情和想法',
+            // requiresAuth: true // 需要登录才能访问
+        }
+    },
+    {
+        path: '/thoughts',
+        name: 'Thoughts',
+        component: Thoughts,
+        meta: {
+            title: '心情随想录',
+            description: '记录每一天的心情和想法，完整CRUD功能',
             // requiresAuth: true // 需要登录才能访问
         }
     },

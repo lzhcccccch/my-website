@@ -47,6 +47,27 @@
 
     <!-- 导航链接展示区域 -->
     <div class="navigation-container">
+      <!-- 临时调试信息 -->
+      <div v-if="false" style="background: #f0f0f0; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; font-family: monospace; font-size: 12px;">
+        <strong>调试信息:</strong><br>
+        总分类数: {{ categories.length }}<br>
+        过滤后分类数: {{ filteredCategories.length }}<br>
+        当前选中: {{ selectedCategory }}<br>
+        搜索词: "{{ searchQuery }}"<br>
+        <details>
+          <summary>分类详情</summary>
+          <div v-for="cat in filteredCategories" :key="cat.id" style="margin: 0.5rem 0; padding: 0.5rem; background: white;">
+            <strong>{{ cat.name }}</strong> (ID: {{ cat.id }}, 排序: {{ cat.sortOrder }})<br>
+            链接数: {{ cat.links ? cat.links.length : 0 }}<br>
+            <div v-if="cat.links && cat.links.length > 0" style="margin-left: 1rem;">
+              <div v-for="link in cat.links" :key="link.id" style="font-size: 10px;">
+                • {{ link.title }} (排序: {{ link.sortOrder }})
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+
       <div v-if="filteredCategories.length === 0" class="empty-state">
         <div class="empty-icon">📂</div>
         <h3>暂无导航链接</h3>
@@ -63,7 +84,11 @@
           class="category-section"
         >
           <div class="category-header">
-            <h2>{{ category.name }}</h2>
+            <div class="category-title">
+              <span class="drag-handle" title="拖拽排序">⋮⋮</span>
+              <h2>{{ category.name }}</h2>
+              <span class="category-count">({{ category.links ? category.links.length : 0 }})</span>
+            </div>
             <div class="category-actions">
               <button @click="editCategory(category)" class="action-btn">
                 <span class="icon">✏️</span>
@@ -74,24 +99,13 @@
             </div>
           </div>
 
-          <draggable
-            v-model="category.links"
-            class="links-grid"
-            :group="{ name: 'links', pull: true, put: true }"
-            :animation="200"
-            :ghost-class="'ghost-card'"
-            :chosen-class="'chosen-card'"
-            :drag-class="'drag-card'"
-            @start="onDragStart"
-            @end="onDragEnd"
-            @change="onDragChange"
-            item-key="id"
-          >
-            <template #item="{ element: link }">
-              <div
-                class="link-card"
-                :class="{ 'dragging': isDragging }"
-              >
+          <!-- 链接展示区域 -->
+          <div class="links-grid">
+            <div
+              v-for="link in category.links"
+              :key="link.id"
+              class="link-card"
+            >
               <div class="link-favicon">
                 <img
                   :src="getFaviconUrl(link.url)"
@@ -112,6 +126,25 @@
                   <span class="icon">🔗</span>
                   访问
                 </a>
+                <!-- 手动排序控制按钮 -->
+                <div class="sort-controls">
+                  <button
+                    @click="moveLinkUp(category.id, link.id)"
+                    class="sort-btn"
+                    :disabled="isFirstLink(category, link)"
+                    title="上移"
+                  >
+                    <span class="icon">⬆️</span>
+                  </button>
+                  <button
+                    @click="moveLinkDown(category.id, link.id)"
+                    class="sort-btn"
+                    :disabled="isLastLink(category, link)"
+                    title="下移"
+                  >
+                    <span class="icon">⬇️</span>
+                  </button>
+                </div>
                 <button @click="editLink(link)" class="action-btn">
                   <span class="icon">✏️</span>
                 </button>
@@ -120,8 +153,23 @@
                 </button>
               </div>
             </div>
-            </template>
-          </draggable>
+          </div>
+
+          <!-- 空分类提示 -->
+          <div v-if="category.links && category.links.length === 0" class="empty-category">
+            <div class="empty-category-icon">📂</div>
+            <p>此分类暂无链接，点击添加</p>
+            <button @click="showAddLinkModal = true; newLink.categoryId = category.id" class="btn-add-link">
+              <span class="icon">➕</span>
+              添加链接
+            </button>
+          </div>
+
+          <!-- 加载状态指示器 -->
+          <div v-if="isLoading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <span>保存中...</span>
+          </div>
         </div>
       </div>
     </div>
@@ -195,7 +243,11 @@
             <label for="linkCategory">所属分类</label>
             <select id="linkCategory" v-model="newLink.categoryId">
               <option value="">请选择分类</option>
-              <option v-for="category in categories" :key="category.id" :value="category.id">
+              <option
+                v-for="category in categories.filter(cat => cat.id !== 'all')"
+                :key="category.id"
+                :value="category.id"
+              >
                 {{ category.name }}
               </option>
             </select>
@@ -213,12 +265,22 @@
         </div>
       </div>
     </div>
+
+    <!-- 通知组件 -->
+    <div v-if="notification.show" :class="['notification', `notification-${notification.type}`]">
+      <div class="notification-content">
+        <span class="notification-icon">
+          {{ notification.type === 'success' ? '✅' : notification.type === 'error' ? '❌' : '⚠️' }}
+        </span>
+        <span class="notification-message">{{ notification.message }}</span>
+        <button @click="hideNotification" class="notification-close">×</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import draggable from 'vue-draggable-next'
 
 /**
  * 个人导航站组件
@@ -233,85 +295,102 @@ const showAddCategoryModal = ref(false) // 显示添加分类模态框
 const showAddLinkModal = ref(false) // 显示添加链接模态框
 const editingLink = ref(null) // 正在编辑的链接
 
-// 拖拽相关状态
-const isDragging = ref(false) // 是否正在拖拽
-const draggedItem = ref(null) // 被拖拽的项目
+// 加载状态
 const isLoading = ref(false) // 保存排序时的加载状态
 
-// 分类数据
+// 通知系统
+const notification = ref({
+  show: false,
+  type: 'success', // 'success', 'error', 'warning'
+  message: '',
+  timeout: null
+})
+
+// 分类数据 - 添加排序属性
 const categories = ref([
-  { id: 'all', name: '全部' },
+  { id: 'all', name: '全部', sortOrder: 0 }, // 特殊分类，不参与排序
   {
     id: 'dev',
     name: '开发工具',
+    sortOrder: 1, // 分类排序序号
     links: [
       {
         id: 1,
         title: 'GitHub',
         description: '全球最大的代码托管平台，开发者的必备工具',
         url: 'https://github.com',
-        createdAt: new Date('2024-01-15')
+        createdAt: new Date('2024-01-15'),
+        sortOrder: 1 // 链接排序序号
       },
       {
         id: 2,
         title: 'Stack Overflow',
         description: '程序员问答社区，解决编程问题的好地方',
         url: 'https://stackoverflow.com',
-        createdAt: new Date('2024-01-16')
+        createdAt: new Date('2024-01-16'),
+        sortOrder: 2
       },
       {
         id: 3,
         title: 'VS Code',
         description: '微软开发的免费代码编辑器',
         url: 'https://code.visualstudio.com',
-        createdAt: new Date('2024-01-17')
+        createdAt: new Date('2024-01-17'),
+        sortOrder: 3
       }
     ]
   },
   {
     id: 'learn',
     name: '学习资源',
+    sortOrder: 2,
     links: [
       {
         id: 4,
         title: 'MDN Web Docs',
         description: 'Web 技术权威文档，前端开发必备参考',
         url: 'https://developer.mozilla.org',
-        createdAt: new Date('2024-01-18')
+        createdAt: new Date('2024-01-18'),
+        sortOrder: 1
       },
       {
         id: 5,
         title: 'Vue.js 官方文档',
         description: 'Vue.js 框架官方文档，学习Vue的最佳资源',
         url: 'https://vuejs.org',
-        createdAt: new Date('2024-01-19')
+        createdAt: new Date('2024-01-19'),
+        sortOrder: 2
       },
       {
         id: 6,
         title: 'JavaScript.info',
         description: '现代 JavaScript 教程，从基础到高级',
         url: 'https://javascript.info',
-        createdAt: new Date('2024-01-20')
+        createdAt: new Date('2024-01-20'),
+        sortOrder: 3
       }
     ]
   },
   {
     id: 'design',
     name: '设计工具',
+    sortOrder: 3,
     links: [
       {
         id: 7,
         title: 'Figma',
         description: '在线协作设计工具，UI/UX设计师的首选',
         url: 'https://figma.com',
-        createdAt: new Date('2024-01-21')
+        createdAt: new Date('2024-01-21'),
+        sortOrder: 1
       },
       {
         id: 8,
         title: 'Unsplash',
         description: '高质量免费图片素材网站',
         url: 'https://unsplash.com',
-        createdAt: new Date('2024-01-22')
+        createdAt: new Date('2024-01-22'),
+        sortOrder: 2
       }
     ]
   }
@@ -329,14 +408,27 @@ const newLink = ref({
   categoryId: ''
 })
 
-// 计算属性：过滤后的分类
+// 计算属性：过滤后的分类（按排序属性排序）
 const filteredCategories = computed(() => {
-  let filtered = categories.value.filter(cat => cat.id !== 'all')
+  // 获取所有非"全部"分类，并按sortOrder排序
+  let filtered = categories.value
+    .filter(cat => cat.id !== 'all')
+    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
 
   // 按分类筛选
   if (selectedCategory.value !== 'all') {
     filtered = filtered.filter(cat => cat.id === selectedCategory.value)
   }
+
+  // 为每个分类的链接按sortOrder排序
+  filtered = filtered.map(category => ({
+    ...category,
+    links: category.links ?
+      category.links
+        .slice() // 创建副本避免修改原数组
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      : []
+  }))
 
   // 按搜索关键词筛选
   if (searchQuery.value.trim()) {
@@ -348,7 +440,7 @@ const filteredCategories = computed(() => {
         link.description.toLowerCase().includes(query) ||
         getDomain(link.url).toLowerCase().includes(query)
       )
-    })).filter(category => category.links.length > 0)
+    })).filter(category => category.links && category.links.length > 0)
   }
 
   return filtered
@@ -430,9 +522,17 @@ function formatDate(date) {
 function addCategory() {
   if (!newCategory.value.name.trim()) return
 
+  // 计算新分类的排序序号（取当前最大值+1）
+  const maxSortOrder = Math.max(
+    ...categories.value
+      .filter(cat => cat.id !== 'all')
+      .map(cat => cat.sortOrder || 0)
+  )
+
   const newCat = {
     id: Date.now().toString(),
     name: newCategory.value.name.trim(),
+    sortOrder: maxSortOrder + 1,
     links: []
   }
 
@@ -442,7 +542,8 @@ function addCategory() {
   newCategory.value.name = ''
   showAddCategoryModal.value = false
 
-  console.log('添加分类成功:', newCat.name)
+  // 显示成功通知
+  showNotification(`分类 "${newCat.name}" 添加成功！`, 'success')
 }
 
 /**
@@ -464,13 +565,17 @@ function deleteCategory(categoryId) {
     const index = categories.value.findIndex(cat => cat.id === categoryId)
     if (index > -1) {
       const deletedCategory = categories.value.splice(index, 1)[0]
-      console.log('删除分类成功:', deletedCategory.name)
 
       // 如果当前选中的分类被删除，切换到全部
       if (selectedCategory.value === categoryId) {
         selectedCategory.value = 'all'
       }
+
+      // 显示成功通知
+      showNotification(`分类 "${deletedCategory.name}" 删除成功！`, 'success')
     }
+  } else {
+    showNotification('取消删除操作', 'warning', 2000)
   }
 }
 
@@ -483,12 +588,19 @@ function addLink() {
   const categoryIndex = categories.value.findIndex(cat => cat.id === newLink.value.categoryId)
   if (categoryIndex === -1) return
 
+  // 计算新链接在该分类中的排序序号
+  const category = categories.value[categoryIndex]
+  const maxSortOrder = category.links && category.links.length > 0
+    ? Math.max(...category.links.map(link => link.sortOrder || 0))
+    : 0
+
   const newLinkData = {
     id: Date.now(),
     title: newLink.value.title.trim(),
     url: newLink.value.url.trim(),
     description: newLink.value.description.trim(),
-    createdAt: new Date()
+    createdAt: new Date(),
+    sortOrder: maxSortOrder + 1
   }
 
   categories.value[categoryIndex].links.push(newLinkData)
@@ -497,7 +609,8 @@ function addLink() {
   resetLinkForm()
   showAddLinkModal.value = false
 
-  console.log('添加链接成功:', newLinkData.title)
+  // 显示成功通知
+  showNotification(`链接 "${newLinkData.title}" 添加成功！`, 'success')
 }
 
 /**
@@ -553,7 +666,8 @@ function updateLink() {
   showAddLinkModal.value = false
   editingLink.value = null
 
-  console.log('更新链接成功:', newLink.value.title)
+  // 显示成功通知
+  showNotification(`链接 "${newLink.value.title}" 更新成功！`, 'success')
 }
 
 /**
@@ -566,10 +680,12 @@ function deleteLink(linkId) {
       const linkIndex = category.links.findIndex(link => link.id === linkId)
       if (linkIndex > -1) {
         const deletedLink = category.links.splice(linkIndex, 1)[0]
-        console.log('删除链接成功:', deletedLink.title)
+        showNotification(`链接 "${deletedLink.title}" 删除成功！`, 'success')
         break
       }
     }
+  } else {
+    showNotification('取消删除操作', 'warning', 2000)
   }
 }
 
@@ -611,115 +727,38 @@ function closeModals() {
 }
 
 /**
- * 拖拽开始事件处理
- * @param {Object} evt - 拖拽事件对象
+ * 显示通知
+ * @param {string} message - 通知消息
+ * @param {string} type - 通知类型 ('success', 'error', 'warning')
+ * @param {number} duration - 显示时长（毫秒）
  */
-function onDragStart(evt) {
-  isDragging.value = true
-  draggedItem.value = evt.item
+function showNotification(message, type = 'success', duration = 3000) {
+  // 清除之前的定时器
+  if (notification.value.timeout) {
+    clearTimeout(notification.value.timeout)
+  }
 
-  // 添加拖拽开始的视觉反馈
-  console.log('开始拖拽链接:', evt.item.textContent)
-
-  // 为拖拽元素添加特殊样式
-  if (evt.item) {
-    evt.item.style.opacity = '0.8'
+  notification.value = {
+    show: true,
+    type,
+    message,
+    timeout: setTimeout(() => {
+      hideNotification()
+    }, duration)
   }
 }
 
 /**
- * 拖拽结束事件处理
- * @param {Object} evt - 拖拽事件对象
+ * 隐藏通知
  */
-function onDragEnd(evt) {
-  isDragging.value = false
-  draggedItem.value = null
-
-  // 恢复元素样式
-  if (evt.item) {
-    evt.item.style.opacity = '1'
+function hideNotification() {
+  if (notification.value.timeout) {
+    clearTimeout(notification.value.timeout)
   }
-
-  console.log('拖拽结束')
+  notification.value.show = false
 }
 
-/**
- * 拖拽变化事件处理（跨分类移动或排序变化）
- * @param {Object} evt - 拖拽变化事件对象
- */
-function onDragChange(evt) {
-  console.log('拖拽变化事件:', evt)
 
-  // 如果是跨分类移动
-  if (evt.added) {
-    const addedLink = evt.added.element
-    const newCategoryId = findCategoryByLinkArray(evt.added.newIndex, addedLink)
-
-    console.log(`链接 "${addedLink.title}" 被移动到新分类`)
-
-    // 调用API保存跨分类移动
-    saveLinkCategoryChange(addedLink.id, newCategoryId)
-  }
-
-  // 如果是同分类内排序变化
-  if (evt.moved) {
-    const movedLink = evt.moved.element
-    const categoryId = findCategoryByLinkArray(evt.moved.newIndex, movedLink)
-
-    console.log(`链接 "${movedLink.title}" 在分类内重新排序`)
-
-    // 调用API保存排序变化
-    saveLinkOrder(categoryId, evt.moved.newIndex, evt.moved.oldIndex)
-  }
-}
-
-/**
- * 根据链接数组查找对应的分类ID
- * @param {number} linkIndex - 链接在数组中的索引
- * @param {Object} link - 链接对象
- * @returns {string|null} 分类ID
- */
-function findCategoryByLinkArray(linkIndex, link) {
-  for (const category of categories.value) {
-    if (category.id !== 'all' && category.links.includes(link)) {
-      return category.id
-    }
-  }
-  return null
-}
-
-/**
- * 保存链接的分类变化到后端
- * @param {number} linkId - 链接ID
- * @param {string} newCategoryId - 新分类ID
- */
-async function saveLinkCategoryChange(linkId, newCategoryId) {
-  try {
-    isLoading.value = true
-
-    // 模拟API调用
-    console.log(`保存链接 ${linkId} 的分类变化到 ${newCategoryId}`)
-
-    // 这里应该调用实际的API
-    // await api.put(`/links/${linkId}/category`, { categoryId: newCategoryId })
-
-    // 模拟网络延迟
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    console.log('分类变化保存成功')
-
-  } catch (error) {
-    console.error('保存分类变化失败:', error)
-
-    // 显示错误提示
-    alert('保存失败，请稍后重试')
-
-    // 可以在这里实现回滚逻辑
-
-  } finally {
-    isLoading.value = false
-  }
-}
 
 /**
  * 保存链接排序变化到后端
@@ -731,27 +770,36 @@ async function saveLinkOrder(categoryId, newIndex, oldIndex) {
   try {
     isLoading.value = true
 
-    // 获取当前分类的所有链接ID顺序
+    // 获取当前分类的所有链接
     const category = categories.value.find(cat => cat.id === categoryId)
-    if (!category) return
+    if (!category || !category.links) return
+
+    // 更新所有链接的sortOrder属性
+    category.links.forEach((link, index) => {
+      link.sortOrder = index + 1
+    })
 
     const linkIds = category.links.map(link => link.id)
 
     console.log(`保存分类 ${categoryId} 的链接排序:`, linkIds)
+    console.log('更新后的sortOrder:', category.links.map(l => ({ id: l.id, title: l.title, sortOrder: l.sortOrder })))
 
     // 这里应该调用实际的API
-    // await api.put(`/categories/${categoryId}/links/order`, { linkIds })
+    // await api.put(`/categories/${categoryId}/links/order`, {
+    //   linkIds,
+    //   links: category.links.map(link => ({ id: link.id, sortOrder: link.sortOrder }))
+    // })
 
     // 模拟网络延迟
     await new Promise(resolve => setTimeout(resolve, 300))
 
-    console.log('排序保存成功')
+    showNotification('链接排序保存成功！', 'success')
 
   } catch (error) {
     console.error('保存排序失败:', error)
 
     // 显示错误提示
-    alert('保存排序失败，请稍后重试')
+    showNotification('保存排序失败，请稍后重试', 'error')
 
   } finally {
     isLoading.value = false
@@ -759,10 +807,91 @@ async function saveLinkOrder(categoryId, newIndex, oldIndex) {
 }
 
 /**
+ * 手动上移链接
+ * @param {string} categoryId - 分类ID
+ * @param {number} linkId - 链接ID
+ */
+function moveLinkUp(categoryId, linkId) {
+  const category = categories.value.find(cat => cat.id === categoryId)
+  if (!category || !category.links) return
+
+  const linkIndex = category.links.findIndex(link => link.id === linkId)
+  if (linkIndex <= 0) return // 已经是第一个或未找到
+
+  // 交换位置
+  const temp = category.links[linkIndex]
+  category.links[linkIndex] = category.links[linkIndex - 1]
+  category.links[linkIndex - 1] = temp
+
+  // 更新sortOrder
+  category.links.forEach((link, index) => {
+    link.sortOrder = index + 1
+  })
+
+  // 保存排序变化
+  saveLinkOrder(categoryId, linkIndex - 1, linkIndex)
+}
+
+/**
+ * 手动下移链接
+ * @param {string} categoryId - 分类ID
+ * @param {number} linkId - 链接ID
+ */
+function moveLinkDown(categoryId, linkId) {
+  const category = categories.value.find(cat => cat.id === categoryId)
+  if (!category || !category.links) return
+
+  const linkIndex = category.links.findIndex(link => link.id === linkId)
+  if (linkIndex === -1 || linkIndex >= category.links.length - 1) return // 已经是最后一个或未找到
+
+  // 交换位置
+  const temp = category.links[linkIndex]
+  category.links[linkIndex] = category.links[linkIndex + 1]
+  category.links[linkIndex + 1] = temp
+
+  // 更新sortOrder
+  category.links.forEach((link, index) => {
+    link.sortOrder = index + 1
+  })
+
+  // 保存排序变化
+  saveLinkOrder(categoryId, linkIndex + 1, linkIndex)
+}
+
+/**
+ * 检查是否为第一个链接
+ * @param {Object} category - 分类对象
+ * @param {Object} link - 链接对象
+ * @returns {boolean}
+ */
+function isFirstLink(category, link) {
+  if (!category.links || category.links.length === 0) return true
+  return category.links[0].id === link.id
+}
+
+/**
+ * 检查是否为最后一个链接
+ * @param {Object} category - 分类对象
+ * @param {Object} link - 链接对象
+ * @returns {boolean}
+ */
+function isLastLink(category, link) {
+  if (!category.links || category.links.length === 0) return true
+  return category.links[category.links.length - 1].id === link.id
+}
+
+/**
  * 组件挂载时的初始化
  */
 onMounted(() => {
-  console.log('个人导航站页面已加载，支持拖拽排序功能')
+  console.log('个人导航站页面已加载')
+
+  // 检查数据结构
+  categories.value.forEach(category => {
+    if (category.id !== 'all') {
+      console.log(`分类 "${category.name}" 包含 ${category.links ? category.links.length : 0} 个链接`)
+    }
+  })
 })
 </script>
 
@@ -980,11 +1109,42 @@ onMounted(() => {
   border-bottom: 2px solid var(--color-border-light);
 }
 
+.category-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.drag-handle {
+  cursor: grab;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-lg);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-base);
+  transition: var(--transition-base);
+  user-select: none;
+}
+
+.drag-handle:hover {
+  color: var(--color-primary);
+  background: var(--color-gray-100);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
 .category-header h2 {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
   margin: 0;
+}
+
+.category-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-normal);
 }
 
 .category-actions {
@@ -1094,38 +1254,91 @@ onMounted(() => {
   border-radius: var(--radius-lg);
 }
 
-/* 加载状态指示器 */
-.category-section.loading {
-  position: relative;
-  pointer-events: none;
+/* 空分类提示 */
+.empty-category {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-tertiary);
+  border: 2px dashed var(--color-border-medium);
+  border-radius: var(--radius-lg);
+  margin-top: var(--spacing-base);
+  transition: var(--transition-base);
 }
 
-.category-section.loading::after {
-  content: '';
+.empty-category:hover {
+  border-color: var(--color-primary);
+  background: rgba(102, 126, 234, 0.02);
+}
+
+.empty-category-icon {
+  font-size: 2rem;
+  margin-bottom: var(--spacing-sm);
+  opacity: 0.6;
+}
+
+.empty-category p {
+  margin-bottom: var(--spacing-base);
+  font-size: var(--font-size-sm);
+}
+
+.btn-add-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.btn-add-link:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+/* 加载状态指示器 */
+.loading-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-xl);
   z-index: 100;
+  gap: var(--spacing-sm);
 }
 
-.category-section.loading::before {
-  content: '保存中...';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--color-primary);
-  color: white;
-  padding: var(--spacing-sm) var(--spacing-base);
-  border-radius: var(--radius-lg);
-  font-size: var(--font-size-sm);
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-gray-200);
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-overlay span {
+  color: var(--color-primary);
   font-weight: var(--font-weight-medium);
-  z-index: 101;
-  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-sm);
+}
+
+.category-section {
+  position: relative;
 }
 
 .link-favicon {
@@ -1200,6 +1413,70 @@ onMounted(() => {
   background: var(--color-primary-dark);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
+}
+
+/* 排序控制按钮组 */
+.sort-controls {
+  display: flex;
+  gap: 2px;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-size: 12px;
+}
+
+.sort-btn:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
+  transform: scale(1.1);
+}
+
+.sort-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.action-btn:hover {
+  background: var(--color-gray-200);
+  color: var(--color-text-primary);
+  transform: translateY(-1px);
+}
+
+.action-btn.delete:hover {
+  background: var(--color-error);
+  color: white;
+  border-color: var(--color-error);
 }
 
 /* 模态框 */
@@ -1417,6 +1694,84 @@ onMounted(() => {
     opacity: 0.4;
     background: var(--color-gray-200);
     border: 2px dashed var(--color-gray-400);
+  }
+}
+
+/* 通知组件样式 */
+.notification {
+  position: fixed;
+  top: var(--spacing-lg);
+  right: var(--spacing-lg);
+  z-index: 9999;
+  max-width: 400px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  animation: slideInRight 0.3s ease-out;
+}
+
+.notification-success {
+  background: var(--color-success);
+  border-left: 4px solid var(--color-success-dark);
+}
+
+.notification-error {
+  background: var(--color-error);
+  border-left: 4px solid var(--color-error-dark);
+}
+
+.notification-warning {
+  background: var(--color-warning);
+  border-left: 4px solid var(--color-warning-dark);
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-base) var(--spacing-lg);
+  color: white;
+  gap: var(--spacing-sm);
+}
+
+.notification-icon {
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
+}
+
+.notification-message {
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-base);
+  transition: var(--transition-base);
+  flex-shrink: 0;
+}
+
+.notification-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 </style>
