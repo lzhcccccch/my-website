@@ -34,7 +34,7 @@ const routes = [
         meta: {
             title: '用户登录',
             description: '用户登录页面',
-            // requiresGuest: true // 已登录用户不能访问
+            requiresGuest: true // 已登录用户不能访问
         }
     },
     {
@@ -44,7 +44,7 @@ const routes = [
         meta: {
             title: '用户注册',
             description: '用户注册页面',
-            // requiresGuest: true // 已登录用户不能访问
+            requiresGuest: true // 已登录用户不能访问
         }
     },
     {
@@ -54,7 +54,7 @@ const routes = [
         meta: {
             title: '个人导航站',
             description: '收集和整理网站链接',
-            // requiresAuth: true // 需要登录才能访问
+            requiresAuth: true // 需要登录才能访问
         }
     },
     {
@@ -64,17 +64,17 @@ const routes = [
         meta: {
             title: '心情随想录',
             description: '记录每一天的心情和想法',
-            // requiresAuth: true // 需要登录才能访问
+            requiresAuth: true // 需要登录才能访问
         }
     },
-    {
-        path: '/note',
-        redirect: '/mood-journal' // 重定向旧路径到新路径
-    },
-    {
-        path: '/thoughts',
-        redirect: '/mood-journal' // 重定向旧路径到新路径
-    },
+    // {
+    //     path: '/note',
+    //     redirect: '/mood-journal' // 重定向旧路径到新路径
+    // },
+    // {
+    //     path: '/thoughts',
+    //     redirect: '/mood-journal' // 重定向旧路径到新路径
+    // },
     {
         path: '/word-cards',
         name: 'WordCards',
@@ -82,7 +82,7 @@ const routes = [
         meta: {
             title: '单词卡片',
             description: '创建和学习单词卡片',
-            // requiresAuth: true // 需要登录才能访问
+            requiresAuth: true // 需要登录才能访问
         }
     },
     {

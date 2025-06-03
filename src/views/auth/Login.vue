@@ -73,7 +73,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
-import { login, validateLoginCredentials } from '../../services/auth'
+import { login, validateLoginCredentials } from '../../api/auth.js'
 
 /**
  * 用户登录组件

@@ -12,7 +12,7 @@
 import { onMounted } from 'vue'
 import DefaultLayout from './components/layout/DefaultLayout.vue'
 import { useAuthStore } from './stores/auth'
-import { getCurrentUser } from './services/auth'
+import { getCurrentUser } from './api/auth.js'
 
 /**
  * 应用程序根组件

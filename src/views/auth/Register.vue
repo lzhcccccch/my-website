@@ -112,7 +112,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
-import { register, validateRegisterData } from '../../services/auth'
+import { register, validateRegisterData } from '../../api/auth.js'
 
 /**
  * 用户注册组件

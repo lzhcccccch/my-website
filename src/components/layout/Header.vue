@@ -45,7 +45,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
-import { logout } from '../../services/auth'
+import { logout } from '../../api/auth.js'
 
 /**
  * 应用程序头部组件
