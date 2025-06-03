@@ -10,10 +10,11 @@ import { useAuthStore } from '../stores/auth'
 const Home = () => import('../views/Home.vue')
 const Login = () => import('../views/auth/Login.vue')
 const Register = () => import('../views/auth/Register.vue')
-const Navigation = () => import('../views/navigation/Index.vue')
-const Note = () => import('../views/note/Index.vue')
-const Thoughts = () => import('../views/Thoughts.vue')
-const Word = () => import('../views/word/Index.vue')
+
+// 功能模块组件 - 迁移回views结构
+const Navigation = () => import('../views/navigation/index.vue')
+const MoodJournal = () => import('../views/mood-journal/index.vue')
+const WordCards = () => import('../views/word-cards/index.vue')
 
 // 路由配置
 const routes = [
@@ -57,9 +58,9 @@ const routes = [
         }
     },
     {
-        path: '/note',
-        name: 'Note',
-        component: Note,
+        path: '/mood-journal',
+        name: 'MoodJournal',
+        component: MoodJournal,
         meta: {
             title: '心情随想录',
             description: '记录每一天的心情和想法',
@@ -67,24 +68,26 @@ const routes = [
         }
     },
     {
-        path: '/thoughts',
-        name: 'Thoughts',
-        component: Thoughts,
-        meta: {
-            title: '心情随想录',
-            description: '记录每一天的心情和想法，完整CRUD功能',
-            // requiresAuth: true // 需要登录才能访问
-        }
+        path: '/note',
+        redirect: '/mood-journal' // 重定向旧路径到新路径
     },
     {
-        path: '/word',
-        name: 'Word',
-        component: Word,
+        path: '/thoughts',
+        redirect: '/mood-journal' // 重定向旧路径到新路径
+    },
+    {
+        path: '/word-cards',
+        name: 'WordCards',
+        component: WordCards,
         meta: {
             title: '单词卡片',
             description: '创建和学习单词卡片',
             // requiresAuth: true // 需要登录才能访问
         }
+    },
+    {
+        path: '/word',
+        redirect: '/word-cards' // 重定向旧路径到新路径
     },
     {
         // 404 页面 - 处理未匹配的路由

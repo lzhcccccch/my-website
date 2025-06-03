@@ -55,7 +55,7 @@
 
         <div
           class="feature-card"
-          @click="navigateTo('/note')"
+          @click="navigateTo('/mood-journal')"
           :class="{ 'locked': !isAuthenticated }"
         >
           <div class="feature-icon">📝</div>
@@ -74,7 +74,7 @@
 
         <div
           class="feature-card"
-          @click="navigateTo('/word')"
+          @click="navigateTo('/word-cards')"
           :class="{ 'locked': !isAuthenticated }"
         >
           <div class="feature-icon">📚</div>

@@ -4,6 +4,8 @@
  * 可以轻松替换为真实的后端 API 调用
  */
 
+import { defaultThoughts, createThoughtObject, validateThoughtData } from '../data/mockThoughts'
+
 // 模拟网络延迟
 const simulateNetworkDelay = (min = 200, max = 800) => {
   const delay = Math.random() * (max - min) + min
@@ -36,37 +38,6 @@ export async function getAllThoughts() {
     }))
   }
 
-  // 默认数据
-  const defaultThoughts = [
-    {
-      id: 1,
-      title: '学习Vue 3的收获',
-      content: '今天深入学习了Vue 3的组合式API，感觉这种写法比选项式API更加灵活和强大。特别是ref和reactive的使用，让状态管理变得更加直观。',
-      mood: 'excited',
-      tags: ['学习', 'Vue3', '前端'],
-      createdAt: new Date('2024-01-15T14:30:00'),
-      updatedAt: new Date('2024-01-15T14:30:00')
-    },
-    {
-      id: 2,
-      title: '个人网站开发计划',
-      content: '计划这周完成个人网站的基本框架搭建。主要包括导航站、心情随想录和单词卡片三个模块。希望能够打造一个实用且美观的个人工具集合。',
-      mood: 'thoughtful',
-      tags: ['计划', '开发', '个人项目'],
-      createdAt: new Date('2024-01-12T09:15:00'),
-      updatedAt: new Date('2024-01-12T09:15:00')
-    },
-    {
-      id: 3,
-      title: '今天的美好时光',
-      content: '下午和朋友一起去公园散步，天气很好，阳光温暖。我们聊了很多关于未来的计划，感觉很充实。这样的时光总是让人感到幸福。',
-      mood: 'happy',
-      tags: ['生活', '友谊', '散步'],
-      createdAt: new Date('2024-01-10T16:45:00'),
-      updatedAt: new Date('2024-01-10T16:45:00')
-    }
-  ]
-
   // 保存默认数据到 localStorage
   saveThoughtsToStorage(defaultThoughts)
   return defaultThoughts
@@ -79,25 +50,20 @@ export async function getAllThoughts() {
  */
 export async function createThought(thoughtData) {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('创建想法失败')
   }
 
-  // 验证必填字段
-  if (!thoughtData.title || !thoughtData.content) {
-    throw new Error('标题和内容不能为空')
+  // 验证数据
+  const validation = validateThoughtData(thoughtData)
+  if (!validation.isValid) {
+    const errorMessages = Object.values(validation.errors).filter(Boolean)
+    throw new Error(errorMessages.join(', '))
   }
 
-  const newThought = {
-    id: Date.now(),
-    title: thoughtData.title.trim(),
-    content: thoughtData.content.trim(),
-    mood: thoughtData.mood || 'neutral',
-    tags: thoughtData.tags || [],
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
+  // 创建新想法对象
+  const newThought = createThoughtObject(thoughtData)
 
   // 获取现有数据并添加新想法
   const thoughts = await getAllThoughts()
