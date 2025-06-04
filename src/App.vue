@@ -90,14 +90,4 @@ body {
   background-color: #f9f9f9;
 }
 
-/* 页面过渡动画 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
 </style>
