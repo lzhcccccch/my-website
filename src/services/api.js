@@ -23,7 +23,12 @@ api.interceptors.request.use(
         // 添加认证令牌到请求头
         const token = localStorage.getItem('token')
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`
+            // 检查token是否已经包含Bearer前缀
+            if (token.startsWith('Bearer ')) {
+                config.headers.Authorization = token
+            } else {
+                config.headers.Authorization = `Bearer ${token}`
+            }
         }
 
         // 添加请求时间戳（用于调试）
@@ -63,8 +68,28 @@ api.interceptors.response.use(
             })
         }
 
-        // 返回响应数据（而不是整个响应对象）
-        return response.data
+        // 处理新的标准化API响应格式
+        const responseData = response.data
+
+        // 检查是否为新的标准化响应格式
+        if (responseData && typeof responseData === 'object' && 'code' in responseData) {
+            // 检查业务逻辑是否成功
+            if (responseData.code === '0') {
+                // 成功：返回data字段的内容
+                return responseData.data || {}
+            } else {
+                // 失败：抛出包含错误信息的异常
+                const error = new Error(responseData.message || '请求失败')
+                error.response = {
+                    status: response.status,
+                    data: responseData
+                }
+                throw error
+            }
+        }
+
+        // 兼容旧格式：直接返回响应数据
+        return responseData
     },
     error => {
         // 计算请求耗时
@@ -85,6 +110,34 @@ api.interceptors.response.use(
             // 服务器返回了错误状态码
             const { status, data } = error.response
 
+            // 检查是否为新的标准化错误响应格式
+            if (data && typeof data === 'object' && 'code' in data && data.code !== '0') {
+                // 新格式的业务逻辑错误
+                const errorInfo = {
+                    status,
+                    message: data.message || '请求失败',
+                    errors: data.errors || {},
+                    code: data.code,
+                    originalError: error
+                }
+
+                // 处理401未授权情况（无论是HTTP状态码还是业务代码）
+                if (status === 401 || data.message?.includes('未授权') || data.message?.includes('登录')) {
+                    // 未授权 - 清除认证信息并重定向到登录页
+                    console.warn('用户未授权，清除认证信息')
+                    localStorage.removeItem('token')
+                    localStorage.removeItem('user')
+
+                    // 避免在登录页面时重复重定向
+                    if (!window.location.pathname.includes('/login')) {
+                        window.location.href = '/login'
+                    }
+                }
+
+                return Promise.reject(errorInfo)
+            }
+
+            // 处理传统HTTP状态码错误
             switch (status) {
                 case 401:
                     // 未授权 - 清除认证信息并重定向到登录页

@@ -23,25 +23,58 @@ export const useAuthStore = defineStore('auth', () => {
 
     /**
      * 设置用户信息和认证状态
-     * @param {Object} userData - 用户数据对象
-     * @param {string} userData.token - JWT认证令牌
-     * @param {string} userData.username - 用户名
-     * @param {string} [userData.email] - 用户邮箱
-     * @param {Object} [userData.profile] - 用户资料信息
+     * @param {Object} userData - 用户数据对象，支持新旧两种格式
+     * 新格式: { accessToken, tokenType, expiresIn, userInfo: { id, username, email, ... } }
+     * 旧格式: { token, username, email, profile }
      */
     function setUser(userData) {
         try {
-            user.value = userData
-            // 存储认证令牌到本地存储
-            if (userData.token) {
-                localStorage.setItem('token', userData.token)
+            // 检查是否为新的API响应格式
+            if (userData.accessToken && userData.userInfo) {
+                // 新格式：处理标准化的API响应
+                const token = `${userData.tokenType || 'Bearer'} ${userData.accessToken}`
+                const userInfo = userData.userInfo
+
+                // 构建用户对象
+                user.value = {
+                    id: userInfo.id,
+                    username: userInfo.username,
+                    email: userInfo.email,
+                    createTime: userInfo.createTime,
+                    updateTime: userInfo.updateTime,
+                    token: token,
+                    expiresIn: userData.expiresIn
+                }
+
+                // 存储认证令牌到本地存储
+                localStorage.setItem('token', token)
+
+                // 存储用户信息到本地存储
+                localStorage.setItem('user', JSON.stringify({
+                    id: userInfo.id,
+                    username: userInfo.username,
+                    email: userInfo.email,
+                    createTime: userInfo.createTime,
+                    updateTime: userInfo.updateTime,
+                    expiresIn: userData.expiresIn
+                }))
+            } else {
+                // 旧格式：保持向后兼容
+                user.value = userData
+
+                // 存储认证令牌到本地存储
+                if (userData.token) {
+                    localStorage.setItem('token', userData.token)
+                }
+
+                // 存储用户信息到本地存储
+                localStorage.setItem('user', JSON.stringify({
+                    username: userData.username,
+                    email: userData.email,
+                    profile: userData.profile
+                }))
             }
-            // 存储用户信息到本地存储（可选，用于页面刷新后恢复状态）
-            localStorage.setItem('user', JSON.stringify({
-                username: userData.username,
-                email: userData.email,
-                profile: userData.profile
-            }))
+
             error.value = null
         } catch (err) {
             console.error('设置用户信息失败:', err)

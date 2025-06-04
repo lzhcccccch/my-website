@@ -144,11 +144,18 @@ async function handleLogin() {
     console.error('登录失败:', err)
 
     // 处理不同类型的错误
-    if (err.status === 422 && err.errors) {
-      // 服务器验证错误
+    if (err.code && err.code !== '0') {
+      // 新格式：业务逻辑错误，直接使用message
+      if (err.errors && typeof err.errors === 'object') {
+        fieldErrors.value = err.errors
+      } else {
+        error.value = err.message || '登录失败，请稍后再试'
+      }
+    } else if (err.status === 422 && err.errors) {
+      // 旧格式：服务器验证错误
       fieldErrors.value = err.errors
     } else if (err.status === 401) {
-      // 认证失败
+      // 旧格式：认证失败
       error.value = '用户名或密码错误'
     } else if (err.status === 0) {
       // 网络错误

@@ -193,11 +193,18 @@ async function handleRegister() {
     console.error('注册失败:', err)
 
     // 处理不同类型的错误
-    if (err.status === 422 && err.errors) {
-      // 服务器验证错误
+    if (err.code && err.code !== '0') {
+      // 新格式：业务逻辑错误，直接使用message
+      if (err.errors && typeof err.errors === 'object') {
+        fieldErrors.value = err.errors
+      } else {
+        error.value = err.message || '注册失败，请稍后再试'
+      }
+    } else if (err.status === 422 && err.errors) {
+      // 旧格式：服务器验证错误
       fieldErrors.value = err.errors
     } else if (err.status === 409) {
-      // 用户名已存在
+      // 旧格式：用户名已存在
       fieldErrors.value = { username: '用户名已被使用，请选择其他用户名' }
     } else if (err.status === 0) {
       // 网络错误

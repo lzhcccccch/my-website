@@ -40,13 +40,24 @@ onMounted(async () => {
         // 向服务器验证令牌并获取最新用户信息
         const userData = await getCurrentUser()
 
-        // 更新用户信息（保持令牌不变）
-        authStore.setUser({
-          ...userData,
-          token
-        })
-
-        console.log('用户认证状态已恢复:', userData.username)
+        // 检查是否为新格式的用户数据
+        if (userData.userInfo) {
+          // 新格式：直接使用API返回的数据，但保持现有token
+          authStore.setUser({
+            accessToken: token.replace('Bearer ', ''),
+            tokenType: 'Bearer',
+            userInfo: userData.userInfo,
+            expiresIn: userData.expiresIn || 86400
+          })
+          console.log('用户认证状态已恢复:', userData.userInfo.username)
+        } else {
+          // 旧格式：保持向后兼容
+          authStore.setUser({
+            ...userData,
+            token
+          })
+          console.log('用户认证状态已恢复:', userData.username)
+        }
       } catch (err) {
         console.warn('令牌验证失败，清除认证状态:', err.message)
         // 如果令牌无效，清除所有认证信息
