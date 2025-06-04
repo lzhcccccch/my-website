@@ -1,19 +1,16 @@
 import axios from 'axios'
+import { API_CONFIG, STORAGE_KEYS } from './config.js'
 
 /**
  * API 服务配置模块
  * 配置 axios 实例，包括请求/响应拦截器和错误处理
- *
- * @deprecated 此文件已迁移到 src/api/index.js，请更新导入路径
  */
 
 // 创建 axios 实例
 const api = axios.create({
-    baseURL: 'http://localhost:8090/api', // 后端 API 基础地址
-    timeout: 15000, // 请求超时时间（15秒）
-    headers: {
-        'Content-Type': 'application/json'
-    }
+    baseURL: API_CONFIG.BASE_URL,
+    timeout: API_CONFIG.TIMEOUT,
+    headers: API_CONFIG.HEADERS
 })
 
 /**
@@ -23,7 +20,7 @@ const api = axios.create({
 api.interceptors.request.use(
     config => {
         // 添加认证令牌到请求头
-        const token = localStorage.getItem('token')
+        const token = localStorage.getItem(STORAGE_KEYS.AUTH.TOKEN)
         if (token) {
             // 检查token是否已经包含Bearer前缀
             if (token.startsWith('Bearer ')) {
@@ -127,8 +124,8 @@ api.interceptors.response.use(
                 if (status === 401 || data.message?.includes('未授权') || data.message?.includes('登录')) {
                     // 未授权 - 清除认证信息并重定向到登录页
                     console.warn('用户未授权，清除认证信息')
-                    localStorage.removeItem('token')
-                    localStorage.removeItem('user')
+                    localStorage.removeItem(STORAGE_KEYS.AUTH.TOKEN)
+                    localStorage.removeItem(STORAGE_KEYS.AUTH.USER)
 
                     // 避免在登录页面时重复重定向
                     if (!window.location.pathname.includes('/login')) {
@@ -144,8 +141,8 @@ api.interceptors.response.use(
                 case 401:
                     // 未授权 - 清除认证信息并重定向到登录页
                     console.warn('用户未授权，清除认证信息')
-                    localStorage.removeItem('token')
-                    localStorage.removeItem('user')
+                    localStorage.removeItem(STORAGE_KEYS.AUTH.TOKEN)
+                    localStorage.removeItem(STORAGE_KEYS.AUTH.USER)
 
                     // 避免在登录页面时重复重定向
                     if (!window.location.pathname.includes('/login')) {
@@ -204,6 +201,11 @@ api.interceptors.response.use(
     }
 )
 
-// 为了向后兼容，暂时保留此导出
-// 请尽快更新导入路径为: import api from '../api/index.js'
+// 导出 API 实例
 export default api
+
+// 重新导出各个模块的 API 函数，方便统一导入
+export * as auth from './auth.js'
+export * as thoughts from './thoughts.js'
+export * as navigation from './navigation.js'
+export * as wordCards from './wordCards.js'

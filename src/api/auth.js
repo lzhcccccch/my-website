@@ -1,4 +1,4 @@
-import api from '../services/api.js'
+import api from './index.js'
 
 /**
  * 认证服务模块

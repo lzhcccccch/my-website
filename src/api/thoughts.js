@@ -4,7 +4,8 @@
  * 可以轻松替换为真实的后端 API 调用
  */
 
-import { defaultThoughts, createThoughtObject, validateThoughtData } from '../data/mockThoughts'
+import { defaultThoughts, createThoughtObject, validateThoughtData } from '../views/mood-journal/data/mockThoughts'
+import { STORAGE_KEYS, MOCK_CONFIG } from './config.js'
 
 // 模拟网络延迟
 const simulateNetworkDelay = (min = 200, max = 800) => {
@@ -29,7 +30,7 @@ export async function getAllThoughts() {
   }
 
   // 从 localStorage 获取数据，如果没有则返回默认数据
-  const stored = localStorage.getItem('thoughts')
+  const stored = localStorage.getItem(STORAGE_KEYS.THOUGHTS.DATA)
   if (stored) {
     return JSON.parse(stored).map(thought => ({
       ...thought,
@@ -194,6 +195,26 @@ export async function searchThoughts(query, filters = {}) {
 }
 
 /**
+ * 获取按心情分组的想法
+ * @param {string} mood - 心情类型
+ * @returns {Promise<Array>} 指定心情的想法列表
+ */
+export async function getThoughtsByMood(mood) {
+  const thoughts = await getAllThoughts()
+  return thoughts.filter(thought => thought.mood === mood)
+}
+
+/**
+ * 获取按标签分组的想法
+ * @param {string} tag - 标签名称
+ * @returns {Promise<Array>} 包含指定标签的想法列表
+ */
+export async function getThoughtsByTag(tag) {
+  const thoughts = await getAllThoughts()
+  return thoughts.filter(thought => thought.tags && thought.tags.includes(tag))
+}
+
+/**
  * 获取心情统计数据
  * @returns {Promise<Object>} 心情统计
  */
@@ -245,7 +266,7 @@ export async function getTagStatistics() {
  */
 function saveThoughtsToStorage(thoughts) {
   try {
-    localStorage.setItem('thoughts', JSON.stringify(thoughts))
+    localStorage.setItem(STORAGE_KEYS.THOUGHTS.DATA, JSON.stringify(thoughts))
   } catch (error) {
     console.error('保存想法数据失败:', error)
   }
@@ -263,7 +284,6 @@ export async function importThoughts(thoughtsData) {
     throw new Error('导入数据格式错误')
   }
 
-  const existingThoughts = await getAllThoughts()
   const importedThoughts = []
   
   for (const data of thoughtsData) {

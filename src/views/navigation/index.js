@@ -27,6 +27,18 @@ export {
   StatisticsMetrics
 } from './types/index'
 
+// API 服务
+export {
+  getAllCategories,
+  getAllLinks,
+  createCategory,
+  createLink,
+  updateLink,
+  deleteLink,
+  searchLinks,
+  updateLinksOrder
+} from '../../api/navigation.js'
+
 /**
  * 功能模块元信息
  */

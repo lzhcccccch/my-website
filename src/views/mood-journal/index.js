@@ -31,8 +31,12 @@ export {
   deleteThought,
   searchThoughts,
   getThoughtsByMood,
-  getThoughtsByTag
-} from './services/thoughtsApi'
+  getThoughtsByTag,
+  getMoodStatistics,
+  getTagStatistics,
+  importThoughts,
+  exportThoughts
+} from '../../api/thoughts.js'
 
 // 类型定义和常量
 export {

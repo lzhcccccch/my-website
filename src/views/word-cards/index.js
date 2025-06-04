@@ -26,6 +26,20 @@ export {
   StatisticsMetrics
 } from './types/index'
 
+// API 服务
+export {
+  getAllCategories,
+  getAllWords,
+  createWord,
+  updateWord,
+  deleteWord,
+  getWordById,
+  searchWords,
+  recordStudyProgress,
+  getStudyStatistics,
+  getWordsForReview
+} from '../../api/wordCards.js'
+
 /**
  * 功能模块元信息
  */

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { STORAGE_KEYS } from '../api/config.js'
 
 /**
  * 用户认证状态管理 Store
@@ -13,7 +14,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // 计算属性：用户是否已认证
     const isAuthenticated = computed(() => {
-        return !!user.value && !!localStorage.getItem('token')
+        return !!user.value && !!localStorage.getItem(STORAGE_KEYS.AUTH.TOKEN)
     })
 
     // 计算属性：获取用户显示名称
@@ -47,10 +48,10 @@ export const useAuthStore = defineStore('auth', () => {
                 }
 
                 // 存储认证令牌到本地存储
-                localStorage.setItem('token', token)
+                localStorage.setItem(STORAGE_KEYS.AUTH.TOKEN, token)
 
                 // 存储用户信息到本地存储
-                localStorage.setItem('user', JSON.stringify({
+                localStorage.setItem(STORAGE_KEYS.AUTH.USER, JSON.stringify({
                     id: userInfo.id,
                     username: userInfo.username,
                     email: userInfo.email,
@@ -64,11 +65,11 @@ export const useAuthStore = defineStore('auth', () => {
 
                 // 存储认证令牌到本地存储
                 if (userData.token) {
-                    localStorage.setItem('token', userData.token)
+                    localStorage.setItem(STORAGE_KEYS.AUTH.TOKEN, userData.token)
                 }
 
                 // 存储用户信息到本地存储
-                localStorage.setItem('user', JSON.stringify({
+                localStorage.setItem(STORAGE_KEYS.AUTH.USER, JSON.stringify({
                     username: userData.username,
                     email: userData.email,
                     profile: userData.profile
@@ -90,8 +91,8 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = null
         error.value = null
         // 清除本地存储中的认证信息
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        localStorage.removeItem(STORAGE_KEYS.AUTH.TOKEN)
+        localStorage.removeItem(STORAGE_KEYS.AUTH.USER)
     }
 
     /**
@@ -100,8 +101,8 @@ export const useAuthStore = defineStore('auth', () => {
      */
     function restoreUserFromStorage() {
         try {
-            const token = localStorage.getItem('token')
-            const storedUser = localStorage.getItem('user')
+            const token = localStorage.getItem(STORAGE_KEYS.AUTH.TOKEN)
+            const storedUser = localStorage.getItem(STORAGE_KEYS.AUTH.USER)
 
             if (token && storedUser) {
                 const userData = JSON.parse(storedUser)
