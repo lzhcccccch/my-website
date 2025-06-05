@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { STORAGE_KEYS } from '../api/config.js'
+import {defineStore} from 'pinia'
+import {ref, computed} from 'vue'
+import {STORAGE_KEYS} from '../api/config.js'
 
 /**
  * 用户认证状态管理 Store
@@ -10,10 +10,16 @@ export const useAuthStore = defineStore('auth', () => {
     // 响应式状态
     const user = ref(null) // 当前登录用户信息
     const isLoading = ref(false) // 认证操作加载状态
-    const error = ref(null) // 认证错误信息
 
     // 计算属性：用户是否已认证
     const isAuthenticated = computed(() => {
+        /*
+        !! 是 JavaScript 的双重否定操作符，它的作用是将任何值转换为布尔值
+            如果 user.value 是 null、undefined、0、""、false 等假值 → 返回 false
+            如果 user.value 是对象、非空字符串、非零数字等真值 → 返回 true
+        !! 等价于使用 Boolean() 构造函数, 这两种写法是等价的
+            !!user.value === Boolean(user.value)
+         */
         return !!user.value && !!localStorage.getItem(STORAGE_KEYS.AUTH.TOKEN)
     })
 
@@ -24,62 +30,29 @@ export const useAuthStore = defineStore('auth', () => {
 
     /**
      * 设置用户信息和认证状态
-     * @param {Object} userData - 用户数据对象，支持新旧两种格式
-     * 新格式: { accessToken, tokenType, expiresIn, userInfo: { id, username, email, ... } }
-     * 旧格式: { token, username, email, profile }
+     * @param {Object} userData - 用户数据对象
+     * { accessToken, tokenType, expiresIn, userInfo: { id, username, email, ... } }
      */
     function setUser(userData) {
         try {
-            // 检查是否为新的API响应格式
-            if (userData.accessToken && userData.userInfo) {
-                // 新格式：处理标准化的API响应
-                const token = `${userData.tokenType || 'Bearer'} ${userData.accessToken}`
-                const userInfo = userData.userInfo
+            const token = `${userData.tokenType || 'Bearer'} ${userData.accessToken}`
+            const userInfo = userData.userInfo
 
-                // 构建用户对象
-                user.value = {
-                    id: userInfo.id,
-                    username: userInfo.username,
-                    email: userInfo.email,
-                    createTime: userInfo.createTime,
-                    updateTime: userInfo.updateTime,
-                    token: token,
-                    expiresIn: userData.expiresIn
-                }
-
-                // 存储认证令牌到本地存储
-                localStorage.setItem(STORAGE_KEYS.AUTH.TOKEN, token)
-
-                // 存储用户信息到本地存储
-                localStorage.setItem(STORAGE_KEYS.AUTH.USER, JSON.stringify({
-                    id: userInfo.id,
-                    username: userInfo.username,
-                    email: userInfo.email,
-                    createTime: userInfo.createTime,
-                    updateTime: userInfo.updateTime,
-                    expiresIn: userData.expiresIn
-                }))
-            } else {
-                // 旧格式：保持向后兼容
-                user.value = userData
-
-                // 存储认证令牌到本地存储
-                if (userData.token) {
-                    localStorage.setItem(STORAGE_KEYS.AUTH.TOKEN, userData.token)
-                }
-
-                // 存储用户信息到本地存储
-                localStorage.setItem(STORAGE_KEYS.AUTH.USER, JSON.stringify({
-                    username: userData.username,
-                    email: userData.email,
-                    profile: userData.profile
-                }))
+            // 构建用户对象
+            user.value = {
+                id: userInfo.id,
+                username: userInfo.username,
+                email: userInfo.email,
+                expiresIn: userData.expiresIn
             }
 
-            error.value = null
+            // 存储认证令牌到本地存储
+            localStorage.setItem(STORAGE_KEYS.AUTH.TOKEN, token)
+
+            // 存储用户信息到本地存储
+            localStorage.setItem(STORAGE_KEYS.AUTH.USER, JSON.stringify(user.value))
         } catch (err) {
             console.error('设置用户信息失败:', err)
-            error.value = '设置用户信息失败'
         }
     }
 
@@ -89,7 +62,6 @@ export const useAuthStore = defineStore('auth', () => {
      */
     function logout() {
         user.value = null
-        error.value = null
         // 清除本地存储中的认证信息
         localStorage.removeItem(STORAGE_KEYS.AUTH.TOKEN)
         localStorage.removeItem(STORAGE_KEYS.AUTH.USER)
@@ -106,7 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
 
             if (token && storedUser) {
                 const userData = JSON.parse(storedUser)
-                user.value = { ...userData, token }
+                user.value = {...userData, token}
             }
         } catch (err) {
             console.error('从本地存储恢复用户状态失败:', err)
@@ -123,26 +95,12 @@ export const useAuthStore = defineStore('auth', () => {
         isLoading.value = loading
     }
 
-    /**
-     * 设置错误信息
-     * @param {string|null} errorMessage - 错误信息
-     */
-    function setError(errorMessage) {
-        error.value = errorMessage
-    }
 
-    /**
-     * 清除错误信息
-     */
-    function clearError() {
-        error.value = null
-    }
 
     return {
         // 状态
         user,
         isLoading,
-        error,
 
         // 计算属性
         isAuthenticated,
@@ -152,8 +110,6 @@ export const useAuthStore = defineStore('auth', () => {
         setUser,
         logout,
         restoreUserFromStorage,
-        setLoading,
-        setError,
-        clearError
+        setLoading
     }
 })

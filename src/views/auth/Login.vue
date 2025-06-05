@@ -165,8 +165,7 @@ async function handleLogin() {
       error.value = err.message || '登录失败，请稍后再试'
     }
 
-    // 设置错误状态到 store
-    authStore.setError(error.value)
+
 
   } finally {
     loading.value = false
@@ -190,7 +189,6 @@ function clearFieldError(fieldName) {
 function clearAllErrors() {
   error.value = null
   fieldErrors.value = {}
-  authStore.clearError()
 }
 
 /**
