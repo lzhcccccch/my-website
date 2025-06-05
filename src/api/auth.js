@@ -1,4 +1,4 @@
-import api from './index.js'
+import api from './baseRequest.js'
 
 /**
  * 认证服务模块
@@ -113,7 +113,7 @@ export function register(userData) {
  * @returns {Promise} API响应
  */
 export function getCurrentUser() {
-    return api.get('/auth/me')
+    return api.get('/auth/profile')
 }
 
 /**
@@ -122,21 +122,4 @@ export function getCurrentUser() {
  */
 export function logout() {
     return api.post('/auth/logout')
-}
-
-/**
- * 刷新认证令牌
- * @returns {Promise} API响应
- */
-export function refreshToken() {
-    return api.post('/auth/refresh')
-}
-
-/**
- * 检查用户名是否可用
- * @param {string} username - 用户名
- * @returns {Promise} API响应
- */
-export function checkUsernameAvailability(username) {
-    return api.get(`/auth/check-username/${encodeURIComponent(username)}`)
 }

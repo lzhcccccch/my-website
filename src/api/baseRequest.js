@@ -7,10 +7,13 @@ import { API_CONFIG, STORAGE_KEYS } from './config.js'
  */
 
 // 创建 axios 实例
+// const api = axios.create({
+//     baseURL: API_CONFIG.BASE_URL,
+//     timeout: API_CONFIG.TIMEOUT,
+//     headers: API_CONFIG.HEADERS
+// })
 const api = axios.create({
-    baseURL: API_CONFIG.BASE_URL,
     timeout: API_CONFIG.TIMEOUT,
-    headers: API_CONFIG.HEADERS
 })
 
 /**

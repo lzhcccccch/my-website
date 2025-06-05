@@ -4,7 +4,7 @@
  * 可以轻松替换为真实的后端 API 调用
  */
 
-import api from './index.js'
+import api from './baseRequest.js'
 import { STORAGE_KEYS, MOCK_CONFIG } from './config.js'
 
 // 模拟网络延迟
@@ -24,7 +24,7 @@ const shouldSimulateError = (probability = 0.05) => {
  */
 export async function getAllCategories() {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('获取分类列表失败')
   }
@@ -68,7 +68,7 @@ export async function getAllCategories() {
  */
 export async function getAllWords() {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('获取单词列表失败')
   }
@@ -141,13 +141,13 @@ export async function createWord(wordData) {
   if (!wordData.word || wordData.word.trim().length === 0) {
     throw new Error('单词不能为空')
   }
-  
+
   if (!wordData.meaning || wordData.meaning.trim().length === 0) {
     throw new Error('释义不能为空')
   }
 
   const words = await getAllWords()
-  
+
   // 检查单词是否重复
   if (words.some(w => w.word.toLowerCase() === wordData.word.toLowerCase().trim())) {
     throw new Error('该单词已存在')
@@ -185,14 +185,14 @@ export async function createWord(wordData) {
  */
 export async function updateWord(id, updateData) {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('更新单词失败')
   }
 
   const words = await getAllWords()
   const wordIndex = words.findIndex(w => w.id === id)
-  
+
   if (wordIndex === -1) {
     throw new Error('单词不存在')
   }
@@ -217,14 +217,14 @@ export async function updateWord(id, updateData) {
  */
 export async function deleteWord(id) {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('删除单词失败')
   }
 
   const words = await getAllWords()
   const wordIndex = words.findIndex(w => w.id === id)
-  
+
   if (wordIndex === -1) {
     throw new Error('单词不存在')
   }
@@ -242,7 +242,7 @@ export async function deleteWord(id) {
  */
 export async function getWordById(id) {
   await simulateNetworkDelay(100, 300)
-  
+
   const words = await getAllWords()
   return words.find(w => w.id === id) || null
 }
@@ -255,7 +255,7 @@ export async function getWordById(id) {
  */
 export async function searchWords(query, filters = {}) {
   await simulateNetworkDelay(100, 400)
-  
+
   const words = await getAllWords()
   let filtered = words
 
@@ -296,10 +296,10 @@ export async function searchWords(query, filters = {}) {
  */
 export async function recordStudyProgress(wordId, isCorrect) {
   await simulateNetworkDelay(100, 300)
-  
+
   const words = await getAllWords()
   const word = words.find(w => w.id === wordId)
-  
+
   if (!word) {
     throw new Error('单词不存在')
   }
@@ -331,9 +331,9 @@ export async function recordStudyProgress(wordId, isCorrect) {
  */
 export async function getStudyStatistics() {
   await simulateNetworkDelay(100, 300)
-  
+
   const words = await getAllWords()
-  
+
   const stats = {
     total: words.length,
     new: words.filter(w => w.masteryLevel === 'new').length,
@@ -357,9 +357,9 @@ export async function getStudyStatistics() {
  */
 export async function getWordsForReview(limit = 10) {
   await simulateNetworkDelay(100, 300)
-  
+
   const words = await getAllWords()
-  
+
   // 优先级：新单词 > 学习中的单词 > 很久没复习的已掌握单词
   const newWords = words.filter(w => w.masteryLevel === 'new')
   const learningWords = words.filter(w => w.masteryLevel === 'learning')

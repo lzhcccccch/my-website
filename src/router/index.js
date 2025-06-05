@@ -67,14 +67,6 @@ const routes = [
             requiresAuth: true // 需要登录才能访问
         }
     },
-    // {
-    //     path: '/note',
-    //     redirect: '/mood-journal' // 重定向旧路径到新路径
-    // },
-    // {
-    //     path: '/thoughts',
-    //     redirect: '/mood-journal' // 重定向旧路径到新路径
-    // },
     {
         path: '/word-cards',
         name: 'WordCards',

@@ -4,7 +4,7 @@
  * 可以轻松替换为真实的后端 API 调用
  */
 
-import api from './index.js'
+import api from './baseRequest.js'
 import { STORAGE_KEYS, MOCK_CONFIG } from './config.js'
 
 // 模拟网络延迟
@@ -24,7 +24,7 @@ const shouldSimulateError = (probability = 0.05) => {
  */
 export async function getAllCategories() {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('获取分类列表失败')
   }
@@ -74,7 +74,7 @@ export async function getAllCategories() {
  */
 export async function getAllLinks() {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('获取链接列表失败')
   }
@@ -142,7 +142,7 @@ export async function createCategory(categoryData) {
   }
 
   const categories = await getAllCategories()
-  
+
   // 检查名称是否重复
   if (categories.some(cat => cat.name === categoryData.name.trim())) {
     throw new Error('分类名称已存在')
@@ -182,13 +182,13 @@ export async function createLink(linkData) {
   if (!linkData.title || linkData.title.trim().length === 0) {
     throw new Error('链接标题不能为空')
   }
-  
+
   if (!linkData.url || !isValidUrl(linkData.url)) {
     throw new Error('请输入有效的URL地址')
   }
 
   const links = await getAllLinks()
-  
+
   // 检查URL是否重复
   if (links.some(link => link.url === linkData.url)) {
     throw new Error('该链接已存在')
@@ -223,14 +223,14 @@ export async function createLink(linkData) {
  */
 export async function updateLink(id, updateData) {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('更新链接失败')
   }
 
   const links = await getAllLinks()
   const linkIndex = links.findIndex(l => l.id === id)
-  
+
   if (linkIndex === -1) {
     throw new Error('链接不存在')
   }
@@ -255,14 +255,14 @@ export async function updateLink(id, updateData) {
  */
 export async function deleteLink(id) {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('删除链接失败')
   }
 
   const links = await getAllLinks()
   const linkIndex = links.findIndex(l => l.id === id)
-  
+
   if (linkIndex === -1) {
     throw new Error('链接不存在')
   }
@@ -281,7 +281,7 @@ export async function deleteLink(id) {
  */
 export async function searchLinks(query, filters = {}) {
   await simulateNetworkDelay(100, 400)
-  
+
   const links = await getAllLinks()
   let filtered = links
 
@@ -319,13 +319,13 @@ export async function searchLinks(query, filters = {}) {
  */
 export async function updateLinksOrder(categoryId, linkIds) {
   await simulateNetworkDelay(200, 500)
-  
+
   if (shouldSimulateError()) {
     throw new Error('更新排序失败')
   }
 
   const links = await getAllLinks()
-  
+
   // 更新指定分类下链接的排序
   linkIds.forEach((linkId, index) => {
     const link = links.find(l => l.id === linkId && l.categoryId === categoryId)

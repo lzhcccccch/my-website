@@ -5,7 +5,7 @@
  */
 
 import { defaultThoughts, createThoughtObject, validateThoughtData } from '../views/mood-journal/data/mockThoughts'
-import { STORAGE_KEYS, MOCK_CONFIG } from './config.js'
+import { STORAGE_KEYS } from './config.js'
 
 // 模拟网络延迟
 const simulateNetworkDelay = (min = 200, max = 800) => {
@@ -24,7 +24,7 @@ const shouldSimulateError = (probability = 0.05) => {
  */
 export async function getAllThoughts() {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('获取想法列表失败')
   }
@@ -82,14 +82,14 @@ export async function createThought(thoughtData) {
  */
 export async function updateThought(id, updateData) {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('更新想法失败')
   }
 
   const thoughts = await getAllThoughts()
   const thoughtIndex = thoughts.findIndex(t => t.id === id)
-  
+
   if (thoughtIndex === -1) {
     throw new Error('想法不存在')
   }
@@ -114,14 +114,14 @@ export async function updateThought(id, updateData) {
  */
 export async function deleteThought(id) {
   await simulateNetworkDelay()
-  
+
   if (shouldSimulateError()) {
     throw new Error('删除想法失败')
   }
 
   const thoughts = await getAllThoughts()
   const thoughtIndex = thoughts.findIndex(t => t.id === id)
-  
+
   if (thoughtIndex === -1) {
     throw new Error('想法不存在')
   }
@@ -139,7 +139,7 @@ export async function deleteThought(id) {
  */
 export async function getThoughtById(id) {
   await simulateNetworkDelay(100, 300)
-  
+
   const thoughts = await getAllThoughts()
   return thoughts.find(t => t.id === id) || null
 }
@@ -152,7 +152,7 @@ export async function getThoughtById(id) {
  */
 export async function searchThoughts(query, filters = {}) {
   await simulateNetworkDelay(100, 400)
-  
+
   const thoughts = await getAllThoughts()
   let filtered = thoughts
 
@@ -180,13 +180,13 @@ export async function searchThoughts(query, filters = {}) {
 
   // 按日期范围筛选
   if (filters.dateFrom) {
-    filtered = filtered.filter(thought => 
+    filtered = filtered.filter(thought =>
       new Date(thought.createdAt) >= new Date(filters.dateFrom)
     )
   }
 
   if (filters.dateTo) {
-    filtered = filtered.filter(thought => 
+    filtered = filtered.filter(thought =>
       new Date(thought.createdAt) <= new Date(filters.dateTo)
     )
   }
@@ -220,10 +220,10 @@ export async function getThoughtsByTag(tag) {
  */
 export async function getMoodStatistics() {
   await simulateNetworkDelay(100, 300)
-  
+
   const thoughts = await getAllThoughts()
   const moodCounts = {}
-  
+
   thoughts.forEach(thought => {
     moodCounts[thought.mood] = (moodCounts[thought.mood] || 0) + 1
   })
@@ -231,7 +231,7 @@ export async function getMoodStatistics() {
   return {
     total: thoughts.length,
     moodCounts,
-    mostCommonMood: Object.keys(moodCounts).reduce((a, b) => 
+    mostCommonMood: Object.keys(moodCounts).reduce((a, b) =>
       moodCounts[a] > moodCounts[b] ? a : b, 'neutral'
     )
   }
@@ -243,10 +243,10 @@ export async function getMoodStatistics() {
  */
 export async function getTagStatistics() {
   await simulateNetworkDelay(100, 300)
-  
+
   const thoughts = await getAllThoughts()
   const tagCounts = {}
-  
+
   thoughts.forEach(thought => {
     if (thought.tags) {
       thought.tags.forEach(tag => {
@@ -279,13 +279,13 @@ function saveThoughtsToStorage(thoughts) {
  */
 export async function importThoughts(thoughtsData) {
   await simulateNetworkDelay(500, 1000)
-  
+
   if (!Array.isArray(thoughtsData)) {
     throw new Error('导入数据格式错误')
   }
 
   const importedThoughts = []
-  
+
   for (const data of thoughtsData) {
     try {
       const thought = await createThought(data)
@@ -309,11 +309,11 @@ export async function importThoughts(thoughtsData) {
  */
 export async function exportThoughts() {
   await simulateNetworkDelay(200, 500)
-  
+
   const thoughts = await getAllThoughts()
   const statistics = await getMoodStatistics()
   const tagStats = await getTagStatistics()
-  
+
   return {
     exportDate: new Date().toISOString(),
     version: '1.0',
