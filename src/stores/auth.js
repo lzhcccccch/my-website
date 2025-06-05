@@ -1,5 +1,5 @@
 import {defineStore} from 'pinia'
-import {ref, computed} from 'vue'
+import {computed, ref} from 'vue'
 import {STORAGE_KEYS} from '../api/config.js'
 
 /**
@@ -25,7 +25,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // 计算属性：获取用户显示名称
     const userDisplayName = computed(() => {
-        return user.value?.username || user.value?.name || '用户'
+        return user.value?.username || '用户'
     })
 
     /**
@@ -35,8 +35,8 @@ export const useAuthStore = defineStore('auth', () => {
      */
     function setUser(userData) {
         try {
-            const token = `${userData.tokenType || 'Bearer'} ${userData.accessToken}`
-            const userInfo = userData.userInfo
+            const token = userData.accessToken;
+            const userInfo = userData.userInfo;
 
             // 构建用户对象
             user.value = {
@@ -77,8 +77,20 @@ export const useAuthStore = defineStore('auth', () => {
             const storedUser = localStorage.getItem(STORAGE_KEYS.AUTH.USER)
 
             if (token && storedUser) {
-                const userData = JSON.parse(storedUser)
-                user.value = {...userData, token}
+                /*
+                `{...userData, token}` 是 JavaScript 的对象展开（Object Spread）语法。
+                    - `...userData`：将 `userData` 对象中的所有属性“展开”到新对象中。
+                    - `token`：等价于 `token: token`，为新对象添加一个名为 `token` 的属性，值为变量 `token`。
+                综合起来，这段代码会创建一个新对象，包含 `userData` 的所有属性，并额外添加或覆盖 `token` 属性。例如：
+                    const userData = { id: 1, username: 'Tom' }
+                    const token = 'abc123'
+                    const result = { ...userData, token }
+                    结果：{ id: 1, username: 'Tom', token: 'abc123' }
+                如果 `userData` 里本身有 `token` 属性，后面的 `token` 会覆盖它。这种写法常用于合并对象或在原有对象基础上添加/修改属性。
+                 */
+                // user.value = {...userData, token}
+
+                user.value = JSON.parse(storedUser)
             }
         } catch (err) {
             console.error('从本地存储恢复用户状态失败:', err)
@@ -95,8 +107,6 @@ export const useAuthStore = defineStore('auth', () => {
         isLoading.value = loading
     }
 
-
-
     return {
         // 状态
         user,
@@ -112,4 +122,5 @@ export const useAuthStore = defineStore('auth', () => {
         restoreUserFromStorage,
         setLoading
     }
+
 })

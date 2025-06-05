@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { API_CONFIG, STORAGE_KEYS } from './config.js'
+import {API_CONFIG, STORAGE_KEYS} from './config.js'
 
 /**
  * API 服务配置模块
@@ -16,29 +16,34 @@ const api = axios.create({
 /**
  * 请求拦截器
  * 在每个请求发送前自动添加认证令牌和其他必要的头部信息
+ *
+ * api.interceptors.request.use() 用于注册请求拦截器。
+ *  第一个参数是一个回调函数，它会在每次发起请求前被调用，用于统一修改请求配置（如添加 token、设置 headers、记录时间等）。
+ *      此时请求还没有真正发出，处理请求头等操作正是在这里完成的，确保每个请求都带上必要的信息。
+ *      只有当这个回调没有抛出错误，axios 才会继续发送请求。
+ *  第二个参数是请求出错时的回调。
+ *
+ *  `config` 是 Axios 请求配置对象，常见属性有：
+ * - `url`：请求地址
+ * - `method`：HTTP 方法（如 `get`、`post` 等）
+ * - `baseURL`：基础 URL
+ * - `headers`：请求头对象
+ * - `params`：URL 查询参数
+ * - `data`：请求体数据（POST/PUT 等）
+ * - `timeout`：超时时间
+ * - `withCredentials`：是否携带跨域凭证
+ * - `responseType`：响应类型
+ * - `onUploadProgress`/`onDownloadProgress`：上传/下载进度回调
+ *
+ * 此外还可以自定义属性（如本代码中的 `metadata`），Axios 会将其原样传递。
+ * 完整属性可参考 [Axios 请求配置文档](https://axios-http.com/zh/docs/req_config)。
  */
 api.interceptors.request.use(
     config => {
         // 添加认证令牌到请求头
         const token = localStorage.getItem(STORAGE_KEYS.AUTH.TOKEN)
         if (token) {
-            // 检查token是否已经包含Bearer前缀
-            if (token.startsWith('Bearer ')) {
-                config.headers.Authorization = token
-            } else {
-                config.headers.Authorization = `Bearer ${token}`
-            }
-        }
-
-        // 添加请求时间戳（用于调试）
-        config.metadata = { startTime: new Date() }
-
-        // 在开发环境下打印请求信息
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`🚀 API请求: ${config.method?.toUpperCase()} ${config.url}`, {
-                data: config.data,
-                params: config.params
-            })
+            config.headers.Authorization = `Bearer ${token}`
         }
 
         return config
@@ -55,22 +60,10 @@ api.interceptors.request.use(
  */
 api.interceptors.response.use(
     response => {
-        // 计算请求耗时（用于性能监控）
-        const endTime = new Date()
-        const duration = endTime - response.config.metadata.startTime
-
-        // 在开发环境下打印响应信息
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`✅ API响应: ${response.config.method?.toUpperCase()} ${response.config.url} (${duration}ms)`, {
-                status: response.status,
-                data: response.data
-            })
-        }
-
-        // 处理新的标准化API响应格式
+        // 处理标准化API响应格式
         const responseData = response.data
 
-        // 检查是否为新的标准化响应格式
+        // 检查是否为标准化响应格式
         if (responseData && typeof responseData === 'object' && 'code' in responseData) {
             // 检查业务逻辑是否成功
             if (responseData.code === '0') {
@@ -78,36 +71,18 @@ api.interceptors.response.use(
                 return responseData.data || {}
             } else {
                 // 失败：抛出包含错误信息的异常
-                const error = new Error(responseData.message || '请求失败')
-                error.response = {
-                    status: response.status,
-                    data: responseData
-                }
-                throw error
+                throw new Error(responseData.message || '请求失败')
             }
         }
 
-        // 兼容旧格式：直接返回响应数据
+        // 直接返回响应数据
         return responseData
     },
     error => {
-        // 计算请求耗时
-        const endTime = new Date()
-        const duration = error.config?.metadata ? endTime - error.config.metadata.startTime : 0
-
-        // 在开发环境下打印错误信息
-        if (process.env.NODE_ENV === 'development') {
-            console.error(`❌ API错误: ${error.config?.method?.toUpperCase()} ${error.config?.url} (${duration}ms)`, {
-                status: error.response?.status,
-                message: error.message,
-                data: error.response?.data
-            })
-        }
-
         // 处理不同类型的错误
         if (error.response) {
             // 服务器返回了错误状态码
-            const { status, data } = error.response
+            const {status, data} = error.response
 
             // 检查是否为新的标准化错误响应格式
             if (data && typeof data === 'object' && 'code' in data && data.code !== '0') {
@@ -149,29 +124,8 @@ api.interceptors.response.use(
                         window.location.href = '/login'
                     }
                     break
-
-                case 403:
-                    // 禁止访问
-                    console.warn('访问被禁止')
-                    break
-
-                case 404:
-                    // 资源未找到
-                    console.warn('请求的资源未找到')
-                    break
-
-                case 422:
-                    // 验证错误
-                    console.warn('数据验证失败:', data)
-                    break
-
-                case 500:
-                    // 服务器内部错误
-                    console.error('服务器内部错误')
-                    break
-
                 default:
-                    console.error(`HTTP错误 ${status}:`, data)
+                    console.error(`服务器内部错误 ${status}:`, data)
             }
 
             // 返回格式化的错误信息

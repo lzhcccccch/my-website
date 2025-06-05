@@ -13,6 +13,7 @@ import { onMounted } from 'vue'
 import DefaultLayout from './components/layout/DefaultLayout.vue'
 import { useAuthStore } from './stores/auth'
 import { getCurrentUser } from './api/auth.js'
+import {STORAGE_KEYS} from "./api/config.js";
 
 /**
  * 应用程序根组件
@@ -34,7 +35,7 @@ onMounted(async () => {
     authStore.restoreUserFromStorage()
 
     // 如果本地存储中有令牌，验证其有效性
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH.TOKEN)
     if (token) {
       try {
         // 向服务器验证令牌并获取最新用户信息
@@ -50,13 +51,6 @@ onMounted(async () => {
             expiresIn: userData.expiresIn || 86400
           })
           console.log('用户认证状态已恢复:', userData.userInfo.username)
-        } else {
-          // 旧格式：保持向后兼容
-          authStore.setUser({
-            ...userData,
-            token
-          })
-          console.log('用户认证状态已恢复:', userData.username)
         }
       } catch (err) {
         console.warn('令牌验证失败，清除认证状态:', err.message)
