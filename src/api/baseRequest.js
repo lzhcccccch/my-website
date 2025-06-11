@@ -56,104 +56,124 @@ api.interceptors.request.use(
 
 /**
  * 响应拦截器
- * 统一处理响应数据和错误
+ * 统一处理标准化API响应格式和错误
+ *
+ * 处理逻辑：
+ * 1. code === '0': 成功，返回data字段内容
+ * 2. code === '401': 未认证，清除本地认证信息并跳转登录页
+ * 3. 其他错误: 抛出包含message的错误对象，由组件自行处理展示
+ *
+ * 标准化API响应格式:
+ * {
+ *   "code": "0",           // 业务状态码，"0"表示成功，"401"表示未认证，其他值表示业务错误
+ *   "message": "请求成功",  // 响应消息
+ *   "data": {...},         // 实际数据内容
+ *   "timestamp": 1749651169259  // 服务器时间戳
+ * }
  */
 api.interceptors.response.use(
     response => {
-        // 处理标准化API响应格式
         const responseData = response.data
 
         // 检查是否为标准化响应格式
         if (responseData && typeof responseData === 'object' && 'code' in responseData) {
-            // 检查业务逻辑是否成功
-            if (responseData.code === '0') {
-                // 成功：返回data字段的内容
-                return responseData.data || {}
-            } else {
-                // 失败：抛出包含错误信息的异常
-                throw new Error(responseData.message || '请求失败')
+            const {code, message, data} = responseData
+
+            // 成功情况：返回data字段内容
+            if (code === '0') {
+                return data !== null && data !== undefined ? data : {}
             }
+
+            // 未认证情况：清除认证信息并跳转登录页
+            if (code === '401') {
+                localStorage.removeItem(STORAGE_KEYS.AUTH.TOKEN)
+                localStorage.removeItem(STORAGE_KEYS.AUTH.USER)
+
+                // 避免在登录页面时重复重定向
+                if (!window.location.pathname.includes('/login')) {
+                    setTimeout(() => {
+                        window.location.href = '/login'
+                    }, 100)
+                }
+            }
+
+            // 其他错误情况：抛出包含message的错误对象
+            const error = new Error(message || '请求失败')
+            // 将错误继续抛出，以便调用方可以捕获并处理这个错误。
+            return Promise.reject(error)
         }
 
-        // 直接返回响应数据
+        // 非标准化响应格式：直接返回原始数据
         return responseData
     },
     error => {
-        // 处理不同类型的错误
+        // 处理HTTP错误
         if (error.response) {
-            // 服务器返回了错误状态码
             const {status, data} = error.response
 
-            // 检查是否为新的标准化错误响应格式
-            if (data && typeof data === 'object' && 'code' in data && data.code !== '0') {
-                // 新格式的业务逻辑错误
-                const errorInfo = {
-                    status,
-                    message: data.message || '请求失败',
-                    errors: data.errors || {},
-                    code: data.code,
-                    originalError: error
-                }
+            // 检查错误响应是否也遵循标准化格式
+            if (data && typeof data === 'object' && 'code' in data) {
+                const {code, message} = data
 
-                // 处理401未授权情况（无论是HTTP状态码还是业务代码）
-                if (status === 401 || data.message?.includes('未授权') || data.message?.includes('登录')) {
-                    // 未授权 - 清除认证信息并重定向到登录页
-                    console.warn('用户未授权，清除认证信息')
+                // 未认证情况
+                if (code === '401') {
+                    console.warn('[Auth] 用户未认证，清除本地认证信息')
                     localStorage.removeItem(STORAGE_KEYS.AUTH.TOKEN)
                     localStorage.removeItem(STORAGE_KEYS.AUTH.USER)
 
-                    // 避免在登录页面时重复重定向
                     if (!window.location.pathname.includes('/login')) {
-                        window.location.href = '/login'
+                        setTimeout(() => {
+                            window.location.href = '/login'
+                        }, 100)
                     }
                 }
 
-                return Promise.reject(errorInfo)
+                // 抛出包含message的错误对象
+                const apiError = new Error(message || '请求失败')
+                return Promise.reject(apiError)
             }
 
-            // 处理传统HTTP状态码错误
-            switch (status) {
-                case 401:
-                    // 未授权 - 清除认证信息并重定向到登录页
-                    console.warn('用户未授权，清除认证信息')
-                    localStorage.removeItem(STORAGE_KEYS.AUTH.TOKEN)
-                    localStorage.removeItem(STORAGE_KEYS.AUTH.USER)
+            // 非标准化HTTP错误响应
+            const httpError = new Error(data?.message || getHttpErrorMessage(status))
+            return Promise.reject(httpError)
 
-                    // 避免在登录页面时重复重定向
-                    if (!window.location.pathname.includes('/login')) {
-                        window.location.href = '/login'
-                    }
-                    break
-                default:
-                    console.error(`服务器内部错误 ${status}:`, data)
-            }
-
-            // 返回格式化的错误信息
-            return Promise.reject({
-                status,
-                message: data?.message || `请求失败 (${status})`,
-                errors: data?.errors || {},
-                originalError: error
-            })
         } else if (error.request) {
-            // 请求已发出但没有收到响应（网络错误）
-            console.error('网络错误或服务器无响应:', error.request)
-            return Promise.reject({
-                status: 0,
-                message: '网络连接失败，请检查网络设置',
-                originalError: error
-            })
+            // 网络错误
+            const networkError = new Error('网络连接失败，请检查网络设置')
+            return Promise.reject(networkError)
         } else {
-            // 其他错误
-            console.error('请求配置错误:', error.message)
-            return Promise.reject({
-                status: -1,
-                message: error.message || '请求失败',
-                originalError: error
-            })
+            // 其他未知错误
+            const unknownError = new Error(error.message || '未知错误')
+            return Promise.reject(unknownError)
         }
     }
 )
+
+
+/**
+ * 获取HTTP状态码对应的错误消息
+ * @param {number} status - HTTP状态码
+ * @returns {string} 错误消息
+ */
+function getHttpErrorMessage(status) {
+    const statusMessages = {
+        400: '请求参数错误',
+        401: '未授权访问',
+        403: '禁止访问',
+        404: '请求的资源不存在',
+        405: '请求方法不允许',
+        408: '请求超时',
+        409: '请求冲突',
+        422: '请求参数验证失败',
+        429: '请求过于频繁',
+        500: '服务器内部错误',
+        502: '网关错误',
+        503: '服务暂时不可用',
+        504: '网关超时'
+    }
+
+    return statusMessages[status] || `请求失败 (${status})`
+}
 
 // 导出 API 实例
 export default api
