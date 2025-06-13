@@ -85,7 +85,7 @@ const routes = [
         // 404 页面 - 处理未匹配的路由
         path: '/:pathMatch(.*)*',
         name: 'NotFound',
-        component: () => import('../views/NotFound.vue'),
+        component: () => import('../components/exception/NotFound.vue'),
         meta: {
             title: '页面未找到',
             description: '请求的页面不存在'
