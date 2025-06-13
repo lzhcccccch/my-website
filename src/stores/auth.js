@@ -8,7 +8,8 @@ import {STORAGE_KEYS} from '../api/config.js'
  */
 export const useAuthStore = defineStore('auth', () => {
     // 响应式状态
-    const user = ref(null) // 当前登录用户信息
+    // 在页面刷新时从本地存储恢复用户信息
+    const user = ref(JSON.parse(localStorage.getItem(STORAGE_KEYS.AUTH.USER)) || null);
     const isLoading = ref(false) // 认证操作加载状态
 
     // 计算属性：用户是否已认证
@@ -31,7 +32,13 @@ export const useAuthStore = defineStore('auth', () => {
     /**
      * 设置用户信息和认证状态
      * @param {Object} userData - 用户数据对象
-     * { accessToken, tokenType, expiresIn, userInfo: { id, username, email, ... } }
+     * @param {string} userData.accessToken - 认证令牌
+     * @param {string} userData.tokenType - 令牌类型
+     * @param {number} userData.expiresIn - 令牌过期时间
+     * @param {Object} userData.userInfo - 用户信息对象
+     * @param {string} userData.userInfo.id - 用户ID
+     * @param {string} userData.userInfo.username - 用户名
+     * @param {string} userData.userInfo.email - 用户邮箱
      */
     function setUser(userData) {
         try {
