@@ -57,7 +57,7 @@
         <details>
           <summary>分类详情</summary>
           <div v-for="cat in filteredCategories" :key="cat.id" style="margin: 0.5rem 0; padding: 0.5rem; background: white;">
-            <strong>{{ cat.name }}</strong> (ID: {{ cat.id }}, 排序: {{ cat.sortOrder }})<br>
+            <strong>{{ cat.categoryName }}</strong> (ID: {{ cat.id }}, 排序: {{ cat.categorySort }})<br>
             链接数: {{ cat.links ? cat.links.length : 0 }}<br>
             <div v-if="cat.links && cat.links.length > 0" style="margin-left: 1rem;">
               <div v-for="link in cat.links" :key="link.id" style="font-size: 10px;">
@@ -148,7 +148,7 @@
                 <button @click="editLink(link)" class="action-btn">
                   <span class="icon">✏️</span>
                 </button>
-                <button @click="deleteLink(link.id)" class="action-btn delete">
+                <button @click="deleteLinkById(link.id)" class="action-btn delete">
                   <span class="icon">🗑️</span>
                 </button>
               </div>
@@ -256,7 +256,7 @@
         <div class="modal-footer">
           <button @click="closeModals" class="btn btn-secondary">取消</button>
           <button
-            @click="editingLink ? updateLink() : addLink()"
+            @click="editingLink ? updateLinkData() : addLink()"
             class="btn btn-primary"
             :disabled="!isLinkFormValid"
           >
@@ -281,6 +281,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { getAllCategories, getAllLinks, createCategory, createLink, updateLink, deleteLink, updateLinksOrder } from '../../api/navigation.js'
 
 /**
  * 个人导航站组件
@@ -295,8 +296,10 @@ const showAddCategoryModal = ref(false) // 显示添加分类模态框
 const showAddLinkModal = ref(false) // 显示添加链接模态框
 const editingLink = ref(null) // 正在编辑的链接
 
-// 加载状态
-const isLoading = ref(false) // 保存排序时的加载状态
+// 数据状态
+const categories = ref([]) // 分类列表
+const links = ref([]) // 链接列表
+const isLoading = ref(false) // 加载状态
 
 // 通知系统
 const notification = ref({
@@ -306,95 +309,41 @@ const notification = ref({
   timeout: null
 })
 
-// 分类数据 - 添加排序属性
-const categories = ref([
-  { id: 'all', name: '全部', sortOrder: 0 }, // 特殊分类，不参与排序
-  {
-    id: 'dev',
-    name: '开发工具',
-    sortOrder: 1, // 分类排序序号
-    links: [
-      {
-        id: 1,
-        title: 'GitHub',
-        description: '全球最大的代码托管平台，开发者的必备工具',
-        url: 'https://github.com',
-        createdAt: new Date('2024-01-15'),
-        sortOrder: 1 // 链接排序序号
-      },
-      {
-        id: 2,
-        title: 'Stack Overflow',
-        description: '程序员问答社区，解决编程问题的好地方',
-        url: 'https://stackoverflow.com',
-        createdAt: new Date('2024-01-16'),
-        sortOrder: 2
-      },
-      {
-        id: 3,
-        title: 'VS Code',
-        description: '微软开发的免费代码编辑器',
-        url: 'https://code.visualstudio.com',
-        createdAt: new Date('2024-01-17'),
-        sortOrder: 3
-      }
-    ]
-  },
-  {
-    id: 'learn',
-    name: '学习资源',
-    sortOrder: 2,
-    links: [
-      {
-        id: 4,
-        title: 'MDN Web Docs',
-        description: 'Web 技术权威文档，前端开发必备参考',
-        url: 'https://developer.mozilla.org',
-        createdAt: new Date('2024-01-18'),
-        sortOrder: 1
-      },
-      {
-        id: 5,
-        title: 'Vue.js 官方文档',
-        description: 'Vue.js 框架官方文档，学习Vue的最佳资源',
-        url: 'https://vuejs.org',
-        createdAt: new Date('2024-01-19'),
-        sortOrder: 2
-      },
-      {
-        id: 6,
-        title: 'JavaScript.info',
-        description: '现代 JavaScript 教程，从基础到高级',
-        url: 'https://javascript.info',
-        createdAt: new Date('2024-01-20'),
-        sortOrder: 3
-      }
-    ]
-  },
-  {
-    id: 'design',
-    name: '设计工具',
-    sortOrder: 3,
-    links: [
-      {
-        id: 7,
-        title: 'Figma',
-        description: '在线协作设计工具，UI/UX设计师的首选',
-        url: 'https://figma.com',
-        createdAt: new Date('2024-01-21'),
-        sortOrder: 1
-      },
-      {
-        id: 8,
-        title: 'Unsplash',
-        description: '高质量免费图片素材网站',
-        url: 'https://unsplash.com',
-        createdAt: new Date('2024-01-22'),
-        sortOrder: 2
-      }
-    ]
+// 数据加载函数
+/**
+ * 加载分类数据
+ */
+async function loadCategories() {
+  try {
+    isLoading.value = true
+    const data = await getAllCategories()
+    console.log('加载分类数据:', data)
+
+    // 添加"全部"选项
+    categories.value = [...data]
+
+    console.log('加载后的分类数据:', categories.value)
+  } catch (error) {
+    showNotification(error.message || '加载分类失败', 'error')
+  } finally {
+    isLoading.value = false
   }
-])
+}
+
+/**
+ * 加载链接数据
+ */
+async function loadLinks() {
+  try {
+    isLoading.value = true
+    links.value = await getAllLinks()
+    console.log('加载链接数据:', links.value)
+  } catch (error) {
+    showNotification(error.message || '加载链接失败', 'error')
+  } finally {
+    isLoading.value = false
+  }
+}
 
 // 表单数据
 const newCategory = ref({
@@ -420,15 +369,17 @@ const filteredCategories = computed(() => {
     filtered = filtered.filter(cat => cat.id === selectedCategory.value)
   }
 
-  // 为每个分类的链接按sortOrder排序
-  filtered = filtered.map(category => ({
-    ...category,
-    links: category.links ?
-      category.links
-        .slice() // 创建副本避免修改原数组
-        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-      : []
-  }))
+  // 为每个分类添加对应的链接，并按sortOrder排序
+  filtered = filtered.map(category => {
+    const categoryLinks = links.value
+      .filter(link => link.categoryId === category.id)
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+
+    return {
+      ...category,
+      links: categoryLinks
+    }
+  })
 
   // 按搜索关键词筛选
   if (searchQuery.value.trim()) {
@@ -519,31 +470,31 @@ function formatDate(date) {
 /**
  * 添加新分类
  */
-function addCategory() {
+async function addCategory() {
   if (!newCategory.value.name.trim()) return
 
-  // 计算新分类的排序序号（取当前最大值+1）
-  const maxSortOrder = Math.max(
-    ...categories.value
-      .filter(cat => cat.id !== 'all')
-      .map(cat => cat.sortOrder || 0)
-  )
+  try {
+    isLoading.value = true
+    const newCat = await createCategory({
+      name: newCategory.value.name.trim(),
+      description: '',
+      icon: '📁'
+    })
 
-  const newCat = {
-    id: Date.now().toString(),
-    name: newCategory.value.name.trim(),
-    sortOrder: maxSortOrder + 1,
-    links: []
+    // 重新加载分类数据
+    await loadCategories()
+
+    // 重置表单
+    newCategory.value.name = ''
+    showAddCategoryModal.value = false
+
+    // 显示成功通知
+    showNotification(`分类 "${newCat.name || newCategory.value.name}" 添加成功！`, 'success')
+  } catch (error) {
+    showNotification(error.message || '添加分类失败', 'error')
+  } finally {
+    isLoading.value = false
   }
-
-  categories.value.push(newCat)
-
-  // 重置表单
-  newCategory.value.name = ''
-  showAddCategoryModal.value = false
-
-  // 显示成功通知
-  showNotification(`分类 "${newCat.name}" 添加成功！`, 'success')
 }
 
 /**
@@ -553,18 +504,29 @@ function addCategory() {
 function editCategory(category) {
   newCategory.value.name = category.name
   showAddCategoryModal.value = true
-  // 这里可以添加编辑逻辑
+  // TODO: 实现编辑分类功能
 }
 
 /**
  * 删除分类
  * @param {string} categoryId - 分类ID
  */
-function deleteCategory(categoryId) {
+async function deleteCategory(categoryId) {
   if (confirm('确定要删除这个分类吗？分类下的所有链接也会被删除。')) {
-    const index = categories.value.findIndex(cat => cat.id === categoryId)
-    if (index > -1) {
-      const deletedCategory = categories.value.splice(index, 1)[0]
+    try {
+      isLoading.value = true
+
+      // 找到要删除的分类
+      const categoryToDelete = categories.value.find(cat => cat.id === categoryId)
+
+      // 这里应该调用删除分类的API
+      // await api.delete(`/navigationCategory/${categoryId}`)
+
+      // 重新加载数据
+      await Promise.all([
+        loadCategories(),
+        loadLinks()
+      ])
 
       // 如果当前选中的分类被删除，切换到全部
       if (selectedCategory.value === categoryId) {
@@ -572,7 +534,11 @@ function deleteCategory(categoryId) {
       }
 
       // 显示成功通知
-      showNotification(`分类 "${deletedCategory.name}" 删除成功！`, 'success')
+      showNotification(`分类 "${categoryToDelete?.name || ''}" 删除成功！`, 'success')
+    } catch (error) {
+      showNotification(error.message || '删除分类失败', 'error')
+    } finally {
+      isLoading.value = false
     }
   } else {
     showNotification('取消删除操作', 'warning', 2000)
@@ -582,35 +548,40 @@ function deleteCategory(categoryId) {
 /**
  * 添加新链接
  */
-function addLink() {
+async function addLink() {
   if (!isLinkFormValid.value) return
 
-  const categoryIndex = categories.value.findIndex(cat => cat.id === newLink.value.categoryId)
-  if (categoryIndex === -1) return
+  try {
+    isLoading.value = true
 
-  // 计算新链接在该分类中的排序序号
-  const category = categories.value[categoryIndex]
-  const maxSortOrder = category.links && category.links.length > 0
-    ? Math.max(...category.links.map(link => link.sortOrder || 0))
-    : 0
+    // 计算新链接在该分类中的排序序号
+    const categoryLinks = links.value.filter(link => link.categoryId === newLink.value.categoryId)
+    const maxSortOrder = categoryLinks.length > 0
+      ? Math.max(...categoryLinks.map(link => link.sortOrder || 0))
+      : 0
 
-  const newLinkData = {
-    id: Date.now(),
-    title: newLink.value.title.trim(),
-    url: newLink.value.url.trim(),
-    description: newLink.value.description.trim(),
-    createdAt: new Date(),
-    sortOrder: maxSortOrder + 1
+    const newLinkData = await createLink({
+      title: newLink.value.title.trim(),
+      url: newLink.value.url.trim(),
+      description: newLink.value.description.trim(),
+      categoryId: newLink.value.categoryId,
+      sortOrder: maxSortOrder + 1
+    })
+
+    // 重新加载链接数据
+    await loadLinks()
+
+    // 重置表单
+    resetLinkForm()
+    showAddLinkModal.value = false
+
+    // 显示成功通知
+    showNotification(`链接 "${newLinkData.siteName || newLink.value.title}" 添加成功！`, 'success')
+  } catch (error) {
+    showNotification(error.message || '添加链接失败', 'error')
+  } finally {
+    isLoading.value = false
   }
-
-  categories.value[categoryIndex].links.push(newLinkData)
-
-  // 重置表单
-  resetLinkForm()
-  showAddLinkModal.value = false
-
-  // 显示成功通知
-  showNotification(`链接 "${newLinkData.title}" 添加成功！`, 'success')
 }
 
 /**
@@ -623,7 +594,7 @@ function editLink(link) {
     title: link.title,
     url: link.url,
     description: link.description,
-    categoryId: findLinkCategory(link.id)
+    categoryId: link.categoryId
   }
   showAddLinkModal.value = true
 }
@@ -631,58 +602,59 @@ function editLink(link) {
 /**
  * 更新链接
  */
-function updateLink() {
+async function updateLinkData() {
   if (!isLinkFormValid.value || !editingLink.value) return
 
-  // 找到链接所在的分类
-  const oldCategoryId = findLinkCategory(editingLink.value.id)
-  const newCategoryId = newLink.value.categoryId
+  try {
+    isLoading.value = true
 
-  // 更新链接数据
-  editingLink.value.title = newLink.value.title.trim()
-  editingLink.value.url = newLink.value.url.trim()
-  editingLink.value.description = newLink.value.description.trim()
+    const updatedLink = await updateLink(editingLink.value.id, {
+      title: newLink.value.title.trim(),
+      url: newLink.value.url.trim(),
+      description: newLink.value.description.trim(),
+      categoryId: newLink.value.categoryId,
+      sortOrder: editingLink.value.sortOrder
+    })
 
-  // 如果分类发生变化，需要移动链接
-  if (oldCategoryId !== newCategoryId) {
-    // 从旧分类中删除
-    const oldCategoryIndex = categories.value.findIndex(cat => cat.id === oldCategoryId)
-    if (oldCategoryIndex > -1) {
-      const linkIndex = categories.value[oldCategoryIndex].links.findIndex(l => l.id === editingLink.value.id)
-      if (linkIndex > -1) {
-        categories.value[oldCategoryIndex].links.splice(linkIndex, 1)
-      }
-    }
+    // 重新加载链接数据
+    await loadLinks()
 
-    // 添加到新分类
-    const newCategoryIndex = categories.value.findIndex(cat => cat.id === newCategoryId)
-    if (newCategoryIndex > -1) {
-      categories.value[newCategoryIndex].links.push(editingLink.value)
-    }
+    // 重置表单
+    resetLinkForm()
+    showAddLinkModal.value = false
+    editingLink.value = null
+
+    // 显示成功通知
+    showNotification(`链接 "${newLink.value.title}" 更新成功！`, 'success')
+  } catch (error) {
+    showNotification(error.message || '更新链接失败', 'error')
+  } finally {
+    isLoading.value = false
   }
-
-  // 重置表单
-  resetLinkForm()
-  showAddLinkModal.value = false
-  editingLink.value = null
-
-  // 显示成功通知
-  showNotification(`链接 "${newLink.value.title}" 更新成功！`, 'success')
 }
 
 /**
  * 删除链接
  * @param {number} linkId - 链接ID
  */
-function deleteLink(linkId) {
+async function deleteLinkById(linkId) {
   if (confirm('确定要删除这个链接吗？')) {
-    for (const category of categories.value) {
-      const linkIndex = category.links.findIndex(link => link.id === linkId)
-      if (linkIndex > -1) {
-        const deletedLink = category.links.splice(linkIndex, 1)[0]
-        showNotification(`链接 "${deletedLink.title}" 删除成功！`, 'success')
-        break
-      }
+    try {
+      isLoading.value = true
+
+      // 找到要删除的链接
+      const linkToDelete = links.value.find(link => link.id === linkId)
+
+      await deleteLink(linkId)
+
+      // 重新加载链接数据
+      await loadLinks()
+
+      showNotification(`链接 "${linkToDelete?.title || ''}" 删除成功！`, 'success')
+    } catch (error) {
+      showNotification(error.message || '删除链接失败', 'error')
+    } finally {
+      isLoading.value = false
     }
   } else {
     showNotification('取消删除操作', 'warning', 2000)
@@ -695,12 +667,8 @@ function deleteLink(linkId) {
  * @returns {string|null} 分类ID
  */
 function findLinkCategory(linkId) {
-  for (const category of categories.value) {
-    if (category.links.some(link => link.id === linkId)) {
-      return category.id
-    }
-  }
-  return null
+  const link = links.value.find(link => link.id === linkId)
+  return link ? link.categoryId : null
 }
 
 /**
@@ -771,27 +739,19 @@ async function saveLinkOrder(categoryId, newIndex, oldIndex) {
     isLoading.value = true
 
     // 获取当前分类的所有链接
-    const category = categories.value.find(cat => cat.id === categoryId)
-    if (!category || !category.links) return
+    const categoryLinks = links.value
+      .filter(link => link.categoryId === categoryId)
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
 
-    // 更新所有链接的sortOrder属性
-    category.links.forEach((link, index) => {
-      link.sortOrder = index + 1
-    })
+    if (categoryLinks.length === 0) return
 
-    const linkIds = category.links.map(link => link.id)
+    const linkIds = categoryLinks.map(link => link.id)
 
     console.log(`保存分类 ${categoryId} 的链接排序:`, linkIds)
-    console.log('更新后的sortOrder:', category.links.map(l => ({ id: l.id, title: l.title, sortOrder: l.sortOrder })))
+    console.log('更新后的sortOrder:', categoryLinks.map(l => ({ id: l.id, title: l.title, sortOrder: l.sortOrder })))
 
-    // 这里应该调用实际的API
-    // await api.put(`/categories/${categoryId}/links/order`, {
-    //   linkIds,
-    //   links: category.links.map(link => ({ id: link.id, sortOrder: link.sortOrder }))
-    // })
-
-    // 模拟网络延迟
-    await new Promise(resolve => setTimeout(resolve, 300))
+    // 调用API保存排序
+    await updateLinksOrder(categoryId, linkIds)
 
     showNotification('链接排序保存成功！', 'success')
 
@@ -799,7 +759,7 @@ async function saveLinkOrder(categoryId, newIndex, oldIndex) {
     console.error('保存排序失败:', error)
 
     // 显示错误提示
-    showNotification('保存排序失败，请稍后重试', 'error')
+    showNotification(error.message || '保存排序失败，请稍后重试', 'error')
 
   } finally {
     isLoading.value = false
@@ -812,19 +772,18 @@ async function saveLinkOrder(categoryId, newIndex, oldIndex) {
  * @param {number} linkId - 链接ID
  */
 function moveLinkUp(categoryId, linkId) {
-  const category = categories.value.find(cat => cat.id === categoryId)
-  if (!category || !category.links) return
+  const categoryLinks = links.value.filter(link => link.categoryId === categoryId)
+  const linkIndex = categoryLinks.findIndex(link => link.id === linkId)
 
-  const linkIndex = category.links.findIndex(link => link.id === linkId)
   if (linkIndex <= 0) return // 已经是第一个或未找到
 
   // 交换位置
-  const temp = category.links[linkIndex]
-  category.links[linkIndex] = category.links[linkIndex - 1]
-  category.links[linkIndex - 1] = temp
+  const temp = categoryLinks[linkIndex]
+  categoryLinks[linkIndex] = categoryLinks[linkIndex - 1]
+  categoryLinks[linkIndex - 1] = temp
 
   // 更新sortOrder
-  category.links.forEach((link, index) => {
+  categoryLinks.forEach((link, index) => {
     link.sortOrder = index + 1
   })
 
@@ -838,19 +797,18 @@ function moveLinkUp(categoryId, linkId) {
  * @param {number} linkId - 链接ID
  */
 function moveLinkDown(categoryId, linkId) {
-  const category = categories.value.find(cat => cat.id === categoryId)
-  if (!category || !category.links) return
+  const categoryLinks = links.value.filter(link => link.categoryId === categoryId)
+  const linkIndex = categoryLinks.findIndex(link => link.id === linkId)
 
-  const linkIndex = category.links.findIndex(link => link.id === linkId)
-  if (linkIndex === -1 || linkIndex >= category.links.length - 1) return // 已经是最后一个或未找到
+  if (linkIndex === -1 || linkIndex >= categoryLinks.length - 1) return // 已经是最后一个或未找到
 
   // 交换位置
-  const temp = category.links[linkIndex]
-  category.links[linkIndex] = category.links[linkIndex + 1]
-  category.links[linkIndex + 1] = temp
+  const temp = categoryLinks[linkIndex]
+  categoryLinks[linkIndex] = categoryLinks[linkIndex + 1]
+  categoryLinks[linkIndex + 1] = temp
 
   // 更新sortOrder
-  category.links.forEach((link, index) => {
+  categoryLinks.forEach((link, index) => {
     link.sortOrder = index + 1
   })
 
@@ -865,8 +823,12 @@ function moveLinkDown(categoryId, linkId) {
  * @returns {boolean}
  */
 function isFirstLink(category, link) {
-  if (!category.links || category.links.length === 0) return true
-  return category.links[0].id === link.id
+  const categoryLinks = links.value
+    .filter(l => l.categoryId === category.id)
+    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+
+  if (categoryLinks.length === 0) return true
+  return categoryLinks[0].id === link.id
 }
 
 /**
@@ -876,22 +838,27 @@ function isFirstLink(category, link) {
  * @returns {boolean}
  */
 function isLastLink(category, link) {
-  if (!category.links || category.links.length === 0) return true
-  return category.links[category.links.length - 1].id === link.id
+  const categoryLinks = links.value
+    .filter(l => l.categoryId === category.id)
+    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+
+  if (categoryLinks.length === 0) return true
+  return categoryLinks[categoryLinks.length - 1].id === link.id
 }
 
 /**
  * 组件挂载时的初始化
  */
-onMounted(() => {
+onMounted(async () => {
   console.log('个人导航站页面已加载')
 
-  // 检查数据结构
-  categories.value.forEach(category => {
-    if (category.id !== 'all') {
-      console.log(`分类 "${category.name}" 包含 ${category.links ? category.links.length : 0} 个链接`)
-    }
-  })
+  // 加载数据
+  await Promise.all([
+    loadCategories(),
+    loadLinks()
+  ])
+
+  console.log(`加载完成: ${categories.value.length - 1} 个分类, ${links.value.length} 个链接`)
 })
 </script>
 
