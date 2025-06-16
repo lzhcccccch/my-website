@@ -8,8 +8,8 @@
       />
     </div>
     <div class="link-content">
-      <h3>{{ link.title }}</h3>
-      <p>{{ link.description }}</p>
+      <h3>{{ link.siteName }}</h3>
+      <p>{{ link.siteOverview }}</p>
       <div class="link-meta">
         <span class="link-domain">{{ domain }}</span>
         <span class="link-date">{{ formattedDate }}</span>

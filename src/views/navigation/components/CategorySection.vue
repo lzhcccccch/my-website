@@ -3,7 +3,7 @@
     <div class="category-header">
       <div class="category-title">
         <span class="drag-handle" title="拖拽排序">⋮⋮</span>
-        <h2>{{ category.name }}</h2>
+        <h2>{{ category.categoryName }}</h2>
         <span class="category-count">({{ category.links ? category.links.length : 0 }})</span>
       </div>
       <div class="category-actions">
@@ -65,7 +65,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'edit-category',
-  'delete-category', 
+  'delete-category',
   'edit-link',
   'delete-link',
   'add-link',

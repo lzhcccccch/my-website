@@ -18,7 +18,7 @@
           @click="handleCategorySelect(category.id)"
           :class="['filter-tab', { active: selectedCategory === category.id }]"
         >
-          {{ category.name }}
+          {{ category.categoryName }}
         </button>
       </div>
     </div>

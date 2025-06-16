@@ -135,7 +135,7 @@ async function loadCategories() {
     const data = await getAllCategories()
     // 添加"全部"选项
     categories.value = [
-      { id: 'all', name: '全部', sortOrder: 0 },
+      { id: 'all', categoryName: '全部', categorySort: 0 },
       ...data
     ]
   } catch (error) {
@@ -154,21 +154,19 @@ async function loadLinks() {
   }
 }
 
-
-
 // 计算属性：过滤后的分类
 const filteredCategories = computed(() => {
-  // 获取所有非"全部"分类，并按sortOrder排序
+  // 获取所有非"全部"分类，并按 categorySort 排序
   let filtered = categories.value
     .filter(cat => cat.id !== 'all')
-    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    .sort((a, b) => (a.categorySort || 0) - (b.categorySort || 0))
 
   // 按分类筛选
   if (selectedCategory.value !== 'all') {
     filtered = filtered.filter(cat => cat.id === selectedCategory.value)
   }
 
-  // 为每个分类添加对应的链接，并按sortOrder排序
+  // 为每个分类添加对应的链接，并按 sortOrder 排序
   filtered = filtered.map(category => {
     const categoryLinks = links.value
       .filter(link => link.categoryId === category.id)
