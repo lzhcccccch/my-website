@@ -11,21 +11,11 @@
           <input
             type="text"
             id="categoryName"
-            v-model="formData.name"
+            v-model="formData.categoryName"
             placeholder="请输入分类名称"
             maxlength="20"
             @keyup.enter="handleSubmit"
           />
-        </div>
-        <div class="form-group">
-          <label for="categoryDescription">分类描述</label>
-          <textarea
-            id="categoryDescription"
-            v-model="formData.description"
-            placeholder="请输入分类描述（可选）"
-            rows="3"
-            maxlength="100"
-          ></textarea>
         </div>
         <div class="form-group">
           <label for="categoryIcon">分类图标</label>
@@ -74,21 +64,19 @@ const emit = defineEmits(['close', 'submit'])
 
 // 表单数据
 const formData = ref({
-  name: '',
-  description: '',
+  categoryName: '',
   icon: '📁'
 })
 
 // 计算属性
 const isEditing = computed(() => !!props.category)
-const isFormValid = computed(() => formData.value.name.trim().length > 0)
+const isFormValid = computed(() => formData.value.categoryName.length > 0)
 
 // 监听分类数据变化
 watch(() => props.category, (newCategory) => {
   if (newCategory) {
     formData.value = {
-      name: newCategory.name || '',
-      description: newCategory.description || '',
+      categoryName: newCategory.categoryName || '',
       icon: newCategory.icon || '📁'
     }
   } else {
@@ -106,8 +94,7 @@ watch(() => props.show, (show) => {
 // 方法
 function resetForm() {
   formData.value = {
-    name: '',
-    description: '',
+    categoryName: '',
     icon: '📁'
   }
 }
@@ -122,11 +109,10 @@ function handleOverlayClick() {
 
 function handleSubmit() {
   if (!isFormValid.value || props.loading) return
-  
+
   emit('submit', {
     ...formData.value,
-    name: formData.value.name.trim(),
-    description: formData.value.description.trim()
+    categoryName: formData.value.categoryName,
   })
 }
 </script>

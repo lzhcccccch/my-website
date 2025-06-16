@@ -23,7 +23,7 @@ export function getAllLinks() {
  * 创建新分类
  */
 export async function createCategory(categoryData) {
-    return api.post('/navigationCategory', categoryData);
+    return api.post('/navigationCategory/save', categoryData);
 }
 
 /**

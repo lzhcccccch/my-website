@@ -3,7 +3,7 @@
     <div class="link-favicon">
       <img
         :src="faviconUrl"
-        :alt="link.title"
+        :alt="link.siteName"
         @error="handleFaviconError"
       />
     </div>
@@ -16,7 +16,7 @@
       </div>
     </div>
     <div class="link-actions">
-      <a :href="link.url" target="_blank" class="visit-btn">
+      <a :href="link.siteUrl" target="_blank" class="visit-btn">
         <span class="icon">🔗</span>
         访问
       </a>
@@ -72,7 +72,7 @@ const emit = defineEmits(['edit', 'delete', 'move-up', 'move-down'])
 // 计算属性
 const faviconUrl = computed(() => {
   try {
-    const domain = new URL(props.link.url).hostname
+    const domain = new URL(props.link.siteUrl).hostname
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
   } catch {
     return '/default-favicon.png'
