@@ -2,21 +2,21 @@
   <div class="link-card">
     <div class="link-favicon">
       <img
-        :src="faviconUrl"
-        :alt="link.siteName"
-        @error="handleFaviconError"
+          :src="link?.siteIcon"
+          :alt="link?.siteName"
+          @error="handleFaviconError"
       />
     </div>
     <div class="link-content">
-      <h3>{{ link.siteName }}</h3>
-      <p>{{ link.siteOverview }}</p>
+      <h3>{{ link?.siteName }}</h3>
+      <p>{{ link?.siteOverview }}</p>
       <div class="link-meta">
         <span class="link-domain">{{ domain }}</span>
         <span class="link-date">{{ formattedDate }}</span>
       </div>
     </div>
     <div class="link-actions">
-      <a :href="link.siteUrl" target="_blank" class="visit-btn">
+      <a :href="link?.siteUrl" target="_blank" class="visit-btn">
         <span class="icon">🔗</span>
         访问
       </a>
@@ -31,27 +31,37 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import {computed} from 'vue'
 
+/**
+ * @typedef {Object} link
+ * @property {string|number} [id]
+ * @property {string} siteName 网站名称
+ * @property {string} siteUrl 网站地址
+ * @property {string} siteIcon 网站图标
+ * @property {string} siteOverview 网站概览
+ * @property {number} [siteSort] 排序值
+ * @property {string} [categoryId] 分类ID
+ * @property {string|Date} [createdTime] 创建时间
+ */
 const props = defineProps({
   link: {
     type: Object,
-    required: true
+    required: true,
+    default: () => ({
+      siteName: '',
+      siteUrl: '',
+      siteIcon: '',
+      siteOverview: '',
+      siteSort: 1,
+      categoryId: ''
+    })
   }
 })
 
 const emit = defineEmits(['edit', 'delete'])
 
 // 计算属性
-const faviconUrl = computed(() => {
-  try {
-    const domain = new URL(props.link?.siteUrl).hostname
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
-  } catch {
-    return '/default-favicon.png'
-  }
-})
-
 const domain = computed(() => {
   try {
     return new URL(props.link?.siteUrl).hostname
@@ -174,33 +184,6 @@ function handleDelete() {
   background: var(--color-primary-dark);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
-}
-
-/* 拖拽手柄 */
-.drag-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  background: var(--color-gray-100);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-tertiary);
-  cursor: grab;
-  transition: var(--transition-base);
-  user-select: none;
-}
-
-.drag-handle:hover {
-  background: var(--color-gray-200);
-  color: var(--color-primary);
-  transform: translateY(-1px);
-}
-
-.drag-handle:active {
-  cursor: grabbing;
 }
 
 .action-btn {
