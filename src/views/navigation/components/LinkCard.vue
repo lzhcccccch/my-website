@@ -20,25 +20,6 @@
         <span class="icon">🔗</span>
         访问
       </a>
-      <!-- 手动排序控制按钮 -->
-      <div class="sort-controls">
-        <button
-          @click="handleMoveUp"
-          class="sort-btn"
-          :disabled="isFirst"
-          title="上移"
-        >
-          <span class="icon">⬆️</span>
-        </button>
-        <button
-          @click="handleMoveDown"
-          class="sort-btn"
-          :disabled="isLast"
-          title="下移"
-        >
-          <span class="icon">⬇️</span>
-        </button>
-      </div>
       <button @click="handleEdit" class="action-btn">
         <span class="icon">✏️</span>
       </button>
@@ -56,18 +37,10 @@ const props = defineProps({
   link: {
     type: Object,
     required: true
-  },
-  isFirst: {
-    type: Boolean,
-    default: false
-  },
-  isLast: {
-    type: Boolean,
-    default: false
   }
 })
 
-const emit = defineEmits(['edit', 'delete', 'move-up', 'move-down'])
+const emit = defineEmits(['edit', 'delete'])
 
 // 计算属性
 const faviconUrl = computed(() => {
@@ -107,14 +80,6 @@ function handleEdit() {
 
 function handleDelete() {
   emit('delete', props.link.id)
-}
-
-function handleMoveUp() {
-  emit('move-up', props.link.id)
-}
-
-function handleMoveDown() {
-  emit('move-down', props.link.id)
 }
 </script>
 
@@ -211,41 +176,31 @@ function handleMoveDown() {
   box-shadow: var(--shadow-md);
 }
 
-/* 排序控制按钮组 */
-.sort-controls {
-  display: flex;
-  gap: 2px;
-  background: var(--color-gray-100);
-  border-radius: var(--radius-sm);
-  padding: 2px;
-}
-
-.sort-btn {
+/* 拖拽手柄 */
+.drag-handle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-xs);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: var(--transition-fast);
-  font-size: 12px;
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  cursor: grab;
+  transition: var(--transition-base);
+  user-select: none;
 }
 
-.sort-btn:hover:not(:disabled) {
-  background: var(--color-primary);
-  color: white;
-  transform: scale(1.1);
+.drag-handle:hover {
+  background: var(--color-gray-200);
+  color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
-.sort-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-  transform: none;
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .action-btn {

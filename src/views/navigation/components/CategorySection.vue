@@ -2,11 +2,13 @@
   <div class="category-section">
     <div class="category-header">
       <div class="category-title">
-        <span class="drag-handle" title="拖拽排序">⋮⋮</span>
         <h2>{{ category.categoryName }}</h2>
-        <span class="category-count">({{ category.links ? category.links.length : 0 }})</span>
+        <span class="category-count">({{ localLinks ? localLinks.length : 0 }})</span>
       </div>
       <div class="category-actions">
+        <button @click="handleAddLink" class="action-btn add-btn" title="添加链接">
+          <span class="icon">➕</span>
+        </button>
         <button @click="handleEdit" class="action-btn">
           <span class="icon">✏️</span>
         </button>
@@ -19,20 +21,16 @@
     <!-- 链接展示区域 -->
     <div class="links-grid">
       <LinkCard
-        v-for="(link, index) in category.links"
+        v-for="link in localLinks"
         :key="link.id"
         :link="link"
-        :is-first="index === 0"
-        :is-last="index === category.links.length - 1"
         @edit="handleLinkEdit"
         @delete="handleLinkDelete"
-        @move-up="handleLinkMoveUp"
-        @move-down="handleLinkMoveDown"
       />
     </div>
 
     <!-- 空分类提示 -->
-    <div v-if="category.links && category.links.length === 0" class="empty-category">
+    <div v-if="!localLinks || localLinks.length === 0" class="empty-category">
       <div class="empty-category-icon">📂</div>
       <p>此分类暂无链接，点击添加</p>
       <button @click="handleAddLink" class="btn-add-link">
@@ -41,15 +39,12 @@
       </button>
     </div>
 
-    <!-- 加载状态指示器 -->
-    <div v-if="loading" class="loading-overlay">
-      <div class="loading-spinner"></div>
-      <span>保存中...</span>
-    </div>
+
   </div>
 </template>
 
 <script setup>
+import { ref, computed, watch } from 'vue'
 import LinkCard from './LinkCard.vue'
 
 const props = defineProps({
@@ -68,11 +63,26 @@ const emit = defineEmits([
   'delete-category',
   'edit-link',
   'delete-link',
-  'add-link',
-  'move-link-up',
-  'move-link-down'
+  'add-link'
 ])
 
+// 本地链接数组，用于展示
+const localLinks = ref([])
+
+// 监听category.links变化，同步到本地数组
+watch(
+  () => props.category.links,
+  (newLinks) => {
+    if (newLinks && Array.isArray(newLinks)) {
+      localLinks.value = [...newLinks]
+    } else {
+      localLinks.value = []
+    }
+  },
+  { immediate: true, deep: true }
+)
+
+// 事件处理函数
 function handleEdit() {
   emit('edit-category', props.category)
 }
@@ -91,14 +101,6 @@ function handleLinkDelete(linkId) {
 
 function handleAddLink() {
   emit('add-link', props.category.id)
-}
-
-function handleLinkMoveUp(linkId) {
-  emit('move-link-up', props.category.id, linkId)
-}
-
-function handleLinkMoveDown(linkId) {
-  emit('move-link-down', props.category.id, linkId)
 }
 </script>
 
@@ -127,24 +129,7 @@ function handleLinkMoveDown(linkId) {
   gap: var(--spacing-sm);
 }
 
-.drag-handle {
-  cursor: grab;
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-lg);
-  padding: var(--spacing-xs);
-  border-radius: var(--radius-base);
-  transition: var(--transition-base);
-  user-select: none;
-}
 
-.drag-handle:hover {
-  color: var(--color-primary);
-  background: var(--color-gray-100);
-}
-
-.drag-handle:active {
-  cursor: grabbing;
-}
 
 .category-header h2 {
   font-size: var(--font-size-2xl);
@@ -238,42 +223,7 @@ function handleLinkMoveDown(linkId) {
   transform: translateY(-1px);
 }
 
-/* 加载状态指示器 */
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.9);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-xl);
-  z-index: 100;
-  gap: var(--spacing-sm);
-}
 
-.loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--color-gray-200);
-  border-top: 3px solid var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loading-overlay span {
-  color: var(--color-primary);
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
-}
 
 .icon {
   font-size: var(--font-size-sm);

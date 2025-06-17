@@ -1,17 +1,24 @@
 /**
  * 个人导航站 API 服务模块
- * 提供链接和分类的 CRUD 操作接口，直接调用后端API
  */
-
 import api from './baseRequest.js'
 
+// 分类相关API
 /**
- * 获取所有链接分类
+ * 获取所有分类
  */
 export function getAllCategories() {
     return api.get('/navigationCategory/list');
 }
 
+/**
+ * 创建新分类
+ */
+export function createCategory(categoryData) {
+    return api.post('/navigationCategory/save', categoryData);
+}
+
+// 网站相关API
 /**
  * 获取所有网站链接
  */
@@ -23,43 +30,26 @@ export function getAllLinks() {
  * 获取分类及其下的网站列表
  */
 export function getCategoriesWithWebsites() {
-    return api.get('/navigationCategory/listWithWebsites');
-}
-
-/**
- * 创建新分类
- */
-export async function createCategory(categoryData) {
-    return api.post('/navigationCategory/save', categoryData);
+    return api.get('/navigationWebsite/listByCategory');
 }
 
 /**
  * 创建新链接
  */
-export async function createLink(linkData) {
-    return await api.post('/navigationWebsite', linkData);
+export function createLink(linkData) {
+    return api.post('/navigationWebsite', linkData);
 }
 
 /**
  * 更新链接
  */
-export async function updateLink(id, updateData) {
-    return await api.put(`/navigationWebsite/${id}`, updateData);
+export function updateLink(id, updateData) {
+    return api.put(`/navigationWebsite/${id}`, updateData);
 }
 
 /**
  * 删除链接
  */
-export async function deleteLink(id) {
-    return await api.delete(`/navigationWebsite/${id}`);
-}
-
-/**
- * 更新链接排序
- */
-export async function updateLinksOrder(categoryId, linkIds) {
-    return await api.put(`/navigationWebsite/order`, {
-        categoryId,
-        linkIds
-    });
+export function deleteLink(id) {
+    return api.delete(`/navigationWebsite/${id}`);
 }
