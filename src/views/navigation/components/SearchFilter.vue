@@ -16,7 +16,7 @@
           v-for="category in categories"
           :key="category.id"
           @click="handleCategorySelect(category.id)"
-          :class="['filter-tab', { active: selectedCategory === category.id }]"
+          :class="['filter-tab', { active: String(selectedCategory) === String(category.id) }]"
         >
           {{ category.categoryName }}
         </button>

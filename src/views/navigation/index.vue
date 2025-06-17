@@ -57,6 +57,7 @@
     <CategoryModal
       :show="showCategoryModal"
       :category="editingCategory"
+      :categories="categories"
       :loading="isLoading"
       @close="handleCloseCategoryModal"
       @submit="handleCategorySubmit"
@@ -104,7 +105,7 @@ const defaultCategoryId = ref(null)
 
 // 数据状态
 const categories = ref([])
-const links = ref([])
+const websiteList = ref([])
 const isLoading = ref(false)
 
 // 通知系统
@@ -129,12 +130,14 @@ async function loadCategoriesWithWebsites() {
 
     // 扁平化所有网站数据
     const allLinks = []
-    data.forEach(category => {
-      if (category.websiteList && category.websiteList.length > 0) {
-        allLinks.push(...category.websiteList)
-      }
-    })
-    links.value = allLinks
+    if (Array.isArray(data)) {
+      data.forEach(category => {
+        if (category?.websiteList && category.websiteList.length > 0) {
+          allLinks.push(...category.websiteList)
+        }
+      })
+    }
+    websiteList.value = allLinks
   } catch (error) {
     showNotification(error.message || '加载数据失败', 'error')
   }
@@ -147,19 +150,19 @@ async function loadCategoriesWithWebsites() {
 const filteredCategories = computed(() => {
   // 获取所有真实分类并排序
   let filtered = categories.value
-    .filter(cat => cat.id !== 'all')
-    .sort((a, b) => (a.categorySort || 0) - (b.categorySort || 0))
+    .filter(cat => cat?.id !== 'all')
+    .sort((a, b) => (a?.categorySort || 0) - (b?.categorySort || 0))
 
   // 根据选中分类筛选
   if (selectedCategory.value !== 'all') {
-    filtered = filtered.filter(cat => cat.id == selectedCategory.value)
+    filtered = filtered.filter(cat => String(cat?.id) === String(selectedCategory.value))
   }
 
   // 为每个分类关联对应的链接
   filtered = filtered.map(category => {
-    const categoryLinks = links.value
-      .filter(link => link.categoryId == category.id)
-      .sort((a, b) => (a.siteSort || 0) - (b.siteSort || 0))
+    const categoryLinks = websiteList.value
+      .filter(link => String(link?.categoryId) === String(category?.id))
+      .sort((a, b) => (a?.siteSort || 0) - (b?.siteSort || 0))
 
     return {
       ...category,
@@ -168,14 +171,14 @@ const filteredCategories = computed(() => {
   })
 
   // 根据搜索关键词过滤
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase()
+  if ((searchQuery.value || '').trim()) {
+    const query = (searchQuery.value || '').toLowerCase()
     filtered = filtered.map(category => ({
       ...category,
       links: category.links.filter(link =>
-        link.siteName.toLowerCase().includes(query) ||
-        link.siteOverview.toLowerCase().includes(query) ||
-        getDomain(link.siteUrl).toLowerCase().includes(query)
+        link?.siteName.toLowerCase().includes(query) ||
+        link?.siteOverview.toLowerCase().includes(query) ||
+        getDomain(link?.siteUrl).toLowerCase().includes(query)
       )
     })).filter(category => category.links && category.links.length > 0)
   }
@@ -263,9 +266,11 @@ async function handleLinkSubmit(linkData) {
 async function addCategory(categoryData) {
   try {
     isLoading.value = true
+
+    // CategoryModal 已经包含了 categorySort，直接使用提交的数据
     const newCat = await createCategory(categoryData)
     await loadCategoriesWithWebsites()
-    showNotification(`分类 "${newCat.name || categoryData.name}" 添加成功！`, 'success')
+    showNotification(`分类 "${newCat.categoryName || categoryData.categoryName}" 添加成功！`, 'success')
   } catch (error) {
     showNotification(error.message || '添加分类失败', 'error')
   } finally {
@@ -280,10 +285,10 @@ async function deleteCategory(categoryId) {
   if (confirm('确定要删除这个分类吗？分类下的所有链接也会被删除。')) {
     try {
       isLoading.value = true
-      const categoryToDelete = categories.value.find(cat => cat.id === categoryId)
+      const categoryToDelete = categories.value.find(cat => String(cat?.id) === String(categoryId))
       // TODO: 调用删除分类的API（需要后端实现）
       await loadCategoriesWithWebsites()
-      if (selectedCategory.value == categoryId) {
+      if (String(selectedCategory.value) === String(categoryId)) {
         selectedCategory.value = 'all'
       }
       showNotification(`分类 "${categoryToDelete?.name || ''}" 删除成功！`, 'success')
@@ -301,16 +306,18 @@ async function deleteCategory(categoryId) {
 async function addLink(linkData) {
   try {
     isLoading.value = true
-    // 计算新链接的排序位置
-    const categoryLinks = links.value.filter(link => link.categoryId == linkData.categoryId)
-    const maxSiteSort = categoryLinks.length > 0
-      ? Math.max(...categoryLinks.map(link => link.siteSort || 0))
-      : 0
 
-    const newLinkData = await createLink({
-      ...linkData,
-      siteSort: maxSiteSort + 1
-    })
+    // 如果没有提供 siteSort，则计算默认排序位置
+    let finalLinkData = { ...linkData }
+    if (!finalLinkData.siteSort) {
+      const categoryLinks = websiteList.value.filter(link => String(link?.categoryId) === String(linkData.categoryId))
+      const maxSiteSort = categoryLinks.length > 0
+        ? Math.max(...categoryLinks.map(link => link?.siteSort || 0))
+        : 0
+      finalLinkData.siteSort = maxSiteSort + 1
+    }
+
+    const newLinkData = await createLink(finalLinkData)
 
     await loadCategoriesWithWebsites()
     showNotification(`链接 "${newLinkData.siteName || linkData.siteName}" 添加成功！`, 'success')
@@ -331,7 +338,8 @@ async function updateLinkData(linkData) {
     isLoading.value = true
     await updateLink(editingLink.value.id, {
       ...linkData,
-      siteSort: editingLink.value.siteSort // 保持原有排序
+      // 使用提交的 siteSort 值，如果没有则保持原有排序
+      siteSort: linkData.siteSort || editingLink.value.siteSort
     })
 
     await loadCategoriesWithWebsites()
@@ -350,7 +358,7 @@ async function deleteLinkById(linkId) {
   if (confirm('确定要删除这个链接吗？')) {
     try {
       isLoading.value = true
-      const linkToDelete = links.value.find(link => link.id === linkId)
+      const linkToDelete = websiteList.value.find(link => String(link?.id) === String(linkId))
       await deleteLink(linkId)
       await loadCategoriesWithWebsites()
       showNotification(`链接 "${linkToDelete?.siteName || ''}" 删除成功！`, 'success')
@@ -361,8 +369,6 @@ async function deleteLinkById(linkId) {
     }
   }
 }
-
-
 
 // 通知系统
 /**
@@ -392,13 +398,6 @@ function hideNotification() {
   }
   notification.value.show = false
 }
-
-
-
-
-
-
-
 
 // 组件生命周期
 /**
@@ -492,8 +491,6 @@ onMounted(async () => {
   font-size: var(--font-size-lg);
 }
 
-
-
 /* 导航容器 */
 .navigation-container {
   max-width: 1200px;
@@ -533,8 +530,6 @@ onMounted(async () => {
   flex-direction: column;
   gap: var(--spacing-3xl);
 }
-
-
 
 /* 响应式设计 */
 @media (max-width: 768px) {

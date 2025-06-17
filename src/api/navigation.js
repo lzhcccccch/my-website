@@ -37,7 +37,7 @@ export function getCategoriesWithWebsites() {
  * 创建新链接
  */
 export function createLink(linkData) {
-    return api.post('/navigationWebsite', linkData);
+    return api.post('/navigationWebsite/save', linkData);
 }
 
 /**

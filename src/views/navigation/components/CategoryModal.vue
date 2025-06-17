@@ -27,6 +27,20 @@
             maxlength="2"
           />
         </div>
+        <div class="form-group">
+          <label for="categorySort">分类排序</label>
+          <input
+            type="number"
+            id="categorySort"
+            v-model.number="formData.categorySort"
+            placeholder="请输入排序号"
+            min="1"
+            :max="maxSortValue"
+          />
+          <div class="form-help">
+            {{ isEditing ? '修改排序号可调整分类显示顺序' : `默认排序号：${defaultSortValue}` }}
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button @click="handleClose" class="btn btn-secondary">取消</button>
@@ -57,6 +71,10 @@ const props = defineProps({
   loading: {
     type: Boolean,
     default: false
+  },
+  categories: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -65,24 +83,44 @@ const emit = defineEmits(['close', 'submit'])
 // 表单数据
 const formData = ref({
   categoryName: '',
-  icon: '📁'
+  icon: '📁',
+  categorySort: 1
 })
 
 // 计算属性
 const isEditing = computed(() => !!props.category)
 const isFormValid = computed(() => formData.value.categoryName.length > 0)
 
+// 计算默认排序值和最大排序值
+const defaultSortValue = computed(() => {
+  const realCategories = props.categories.filter(cat => cat?.id !== 'all')
+  return realCategories.length + 1
+})
+
+const maxSortValue = computed(() => {
+  const realCategories = props.categories.filter(cat => cat?.id !== 'all')
+  return Math.max(realCategories.length + 1, 1)
+})
+
 // 监听分类数据变化
 watch(() => props.category, (newCategory) => {
   if (newCategory) {
     formData.value = {
       categoryName: newCategory.categoryName || '',
-      icon: newCategory.icon || '📁'
+      icon: newCategory.icon || '📁',
+      categorySort: newCategory.categorySort || defaultSortValue.value
     }
   } else {
     resetForm()
   }
 }, { immediate: true })
+
+// 监听分类列表变化，更新默认排序值
+watch(() => props.categories, () => {
+  if (!isEditing.value) {
+    formData.value.categorySort = defaultSortValue.value
+  }
+}, { deep: true })
 
 // 监听显示状态
 watch(() => props.show, (show) => {
@@ -95,7 +133,8 @@ watch(() => props.show, (show) => {
 function resetForm() {
   formData.value = {
     categoryName: '',
-    icon: '📁'
+    icon: '📁',
+    categorySort: defaultSortValue.value
   }
 }
 
@@ -210,6 +249,12 @@ function handleSubmit() {
 .form-group textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+.form-help {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
 }
 
 .modal-footer {

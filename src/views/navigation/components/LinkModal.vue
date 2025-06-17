@@ -7,33 +7,56 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label for="linkTitle">网站名称</label>
+          <label for="siteName">网站名称</label>
           <input
             type="text"
-            id="linkTitle"
-            v-model="formData.title"
+            id="siteName"
+            v-model="formData.siteName"
             placeholder="请输入网站名称"
             maxlength="50"
           />
         </div>
         <div class="form-group">
-          <label for="linkUrl">网站地址</label>
+          <label for="siteUrl">网站地址</label>
           <input
             type="url"
-            id="linkUrl"
-            v-model="formData.url"
+            id="siteUrl"
+            v-model="formData.siteUrl"
             placeholder="https://example.com"
           />
         </div>
         <div class="form-group">
-          <label for="linkDescription">网站描述</label>
+          <label for="siteIcon">网站图标</label>
+          <input
+            type="text"
+            id="siteIcon"
+            v-model="formData.siteIcon"
+            placeholder="请输入图标URL或emoji"
+            maxlength="100"
+          />
+        </div>
+        <div class="form-group">
+          <label for="siteOverview">网站概览</label>
           <textarea
-            id="linkDescription"
-            v-model="formData.description"
-            placeholder="请输入网站描述"
+            id="siteOverview"
+            v-model="formData.siteOverview"
+            placeholder="请输入网站概览描述"
             rows="3"
             maxlength="200"
           ></textarea>
+        </div>
+        <div class="form-group">
+          <label for="siteSort">网站排序</label>
+          <input
+            type="number"
+            id="siteSort"
+            v-model.number="formData.siteSort"
+            placeholder="请输入排序号"
+            min="1"
+          />
+          <div class="form-help">
+            {{ isEditing ? '修改排序号可调整网站显示顺序' : `默认排序号：${defaultSortValue}` }}
+          </div>
         </div>
         <div class="form-group">
           <label for="linkCategory">所属分类</label>
@@ -44,7 +67,7 @@
               :key="category.id"
               :value="category.id"
             >
-              {{ category.name }}
+              {{ category.categoryName }}
             </option>
           </select>
         </div>
@@ -64,7 +87,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue';
+import {getAllCategories} from "../../../api/navigation.js";
+import {message} from "ant-design-vue";
 
 const props = defineProps({
   show: {
@@ -93,33 +118,47 @@ const emit = defineEmits(['close', 'submit'])
 
 // 表单数据
 const formData = ref({
-  title: '',
-  url: '',
-  description: '',
+  siteName: '',
+  siteUrl: '',
+  siteIcon: '',
+  siteOverview: '',
+  siteSort: 1,
   categoryId: ''
 })
 
 // 计算属性
 const isEditing = computed(() => !!props.link)
 
-const availableCategories = computed(() => {
-  return props.categories.filter(cat => cat.id !== 'all')
+const availableCategories = ref([]);
+
+// 计算默认排序值 - 当前分类下网站个数+1
+const defaultSortValue = computed(() => {
+  if (!formData.value.categoryId) return 1
+
+  // 从父组件传入的categories中找到对应分类的网站数量
+  const currentCategory = props.categories.find(cat => String(cat.id) === String(formData.value.categoryId))
+  if (currentCategory && currentCategory.links && Array.isArray(currentCategory.links)) {
+    return currentCategory.links.length + 1
+  }
+  return 1
 })
 
 const isFormValid = computed(() => {
-  return formData.value.title.trim() &&
-         formData.value.url.trim() &&
+  return formData.value.siteName.trim() &&
+         formData.value.siteUrl.trim() &&
          formData.value.categoryId &&
-         isValidUrl(formData.value.url)
+         isValidUrl(formData.value.siteUrl)
 })
 
 // 监听链接数据变化
 watch(() => props.link, (newLink) => {
   if (newLink) {
     formData.value = {
-      title: newLink.title || '',
-      url: newLink.url || '',
-      description: newLink.description || '',
+      siteName: newLink.siteName || '',
+      siteUrl: newLink.siteUrl || '',
+      siteIcon: newLink.siteIcon || '',
+      siteOverview: newLink.siteOverview || '',
+      siteSort: newLink.siteSort || defaultSortValue.value,
       categoryId: newLink.categoryId || ''
     }
   } else {
@@ -129,19 +168,46 @@ watch(() => props.link, (newLink) => {
 
 // 监听显示状态
 watch(() => props.show, (show) => {
-  if (show && !props.link && props.defaultCategoryId) {
-    formData.value.categoryId = props.defaultCategoryId
+  if (show) {
+    loadCategories() // 每次显示模态框时加载分类
+    if (!props.link && props.defaultCategoryId) {
+      formData.value.categoryId = props.defaultCategoryId
+      formData.value.siteSort = defaultSortValue.value
+    }
   } else if (!show) {
     resetForm()
   }
 })
 
+// 监听分类变化，更新默认排序值
+watch(() => formData.value.categoryId, () => {
+  if (!isEditing.value) {
+    formData.value.siteSort = defaultSortValue.value
+  }
+})
+
+// 组件挂载时加载分类
+onMounted(() => {
+  loadCategories()
+})
+
 // 方法
+function loadCategories() {
+  getAllCategories().then(res => {
+    availableCategories.value = res;
+  }).catch(err => {
+    console.error('获取分类失败:', err);
+    message.error('获取分类失败');
+  })
+}
+
 function resetForm() {
   formData.value = {
-    title: '',
-    url: '',
-    description: '',
+    siteName: '',
+    siteUrl: '',
+    siteIcon: '',
+    siteOverview: '',
+    siteSort: defaultSortValue.value,
     categoryId: props.defaultCategoryId || ''
   }
 }
@@ -165,12 +231,13 @@ function handleOverlayClick() {
 
 function handleSubmit() {
   if (!isFormValid.value || props.loading) return
-  
+
   emit('submit', {
     ...formData.value,
-    title: formData.value.title.trim(),
-    url: formData.value.url.trim(),
-    description: formData.value.description.trim()
+    siteName: formData.value.siteName.trim(),
+    siteUrl: formData.value.siteUrl.trim(),
+    siteIcon: formData.value.siteIcon.trim(),
+    siteOverview: formData.value.siteOverview.trim()
   })
 }
 </script>
@@ -270,6 +337,12 @@ function handleSubmit() {
 .form-group textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+.form-help {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
 }
 
 .modal-footer {
