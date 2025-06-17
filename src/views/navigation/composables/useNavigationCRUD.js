@@ -81,14 +81,10 @@ export function useNavigationCRUD(navigationData, notification) {
   /**
    * 更新链接
    */
-  async function updateLinkData(linkData, editingLink) {
-    if (!editingLink) return
-
+  async function updateLinkData(linkData) {
     try {
       isLoading.value = true
-      await updateLink({
-        ...linkData
-      })
+      await updateLink({...linkData})
 
       await loadCategoriesWithWebsites()
       showNotification(`链接 "${linkData.siteName}" 更新成功！`, 'success')

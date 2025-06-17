@@ -27,13 +27,27 @@
         </div>
         <div class="form-group">
           <label for="siteIcon">网站图标</label>
-          <input
-              type="text"
-              id="siteIcon"
-              v-model="formData.siteIcon"
-              placeholder="请输入图标URL或emoji"
-              maxlength="100"
-          />
+          <div class="icon-input-group">
+            <input
+                type="text"
+                id="siteIcon"
+                v-model="formData.siteIcon"
+                placeholder="请输入图标URL或emoji"
+                maxlength="100"
+            />
+            <button
+                type="button"
+                class="btn-generate-icon"
+                @click="generateFavicon"
+                :disabled="!formData.siteUrl || !isValidUrl(formData.siteUrl)"
+                title="自动生成网站图标"
+            >
+              🎯 自动生成
+            </button>
+          </div>
+          <div class="form-help">
+            输入网站地址后，点击"自动生成"按钮可自动获取网站图标
+          </div>
         </div>
         <div class="form-group">
           <label for="siteOverview">网站概览</label>
@@ -152,11 +166,39 @@ const isFormValid = computed(() => {
       isValidUrl(formData.value.siteUrl)
 })
 
+// ===== 🎯 网站图标自动生成功能 =====
+
+/**
+ * 📸 根据网站URL生成favicon地址
+ *
+ * @param {string} url - 网站URL地址
+ * @returns {string} favicon的URL地址
+ *
+ * 📝 功能说明：
+ * 1. 从URL中提取域名
+ * 2. 使用Google的favicon服务生成图标URL
+ * 3. 如果URL无效，返回默认图标
+ */
+const generateFaviconUrl = (url) => {
+  try {
+    const domain = new URL(url).hostname
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
+  } catch {
+    return '/default-favicon.png'
+  }
+}
+
+// 计算属性：当前表单URL对应的favicon地址
+const faviconUrl = computed(() => {
+  if (!formData.value.siteUrl) return ''
+  return generateFaviconUrl(formData.value.siteUrl)
+})
+
 // 监听链接数据变化
 watch(() => props.link, (newLink) => {
   if (newLink) {
     formData.value = {
-      id: props.link.id,
+      id: props.link?.id,
       siteName: newLink.siteName || '',
       siteUrl: newLink.siteUrl || '',
       siteIcon: newLink.siteIcon || '',
@@ -186,6 +228,26 @@ watch(() => props.show, (show) => {
 watch(() => formData.value.categoryId, () => {
   if (!isEditing.value) {
     formData.value.siteSort = defaultSortValue.value
+  }
+})
+
+// ===== 🎯 监听网站URL变化，自动设置图标 =====
+/**
+ * 📝 功能说明：
+ * 当用户输入网站URL后，如果图标字段为空，自动设置为favicon地址
+ * 这样用户就不需要手动输入图标地址了
+ */
+watch(() => formData.value.siteUrl, (newUrl, oldUrl) => {
+  // 只在新增模式下自动设置图标
+  if (!isEditing.value && newUrl && newUrl !== oldUrl) {
+    // 检查URL是否有效
+    if (isValidUrl(newUrl)) {
+      // 如果当前图标为空，或者图标是之前URL生成的favicon，则自动更新
+      const oldFaviconUrl = oldUrl ? generateFaviconUrl(oldUrl) : ''
+      if (!formData.value.siteIcon || formData.value.siteIcon === oldFaviconUrl) {
+        formData.value.siteIcon = generateFaviconUrl(newUrl)
+      }
+    }
   }
 })
 
@@ -230,6 +292,22 @@ function handleClose() {
 
 function handleOverlayClick() {
   emit('close')
+}
+
+/**
+ * 🎯 手动生成网站图标
+ *
+ * 📝 功能说明：
+ * 用户点击"自动生成"按钮时，根据当前输入的URL生成favicon地址
+ * 并设置到图标字段中
+ */
+function generateFavicon() {
+  if (!formData.value.siteUrl || !isValidUrl(formData.value.siteUrl)) {
+    return
+  }
+
+  // 生成favicon URL并设置到表单中
+  formData.value.siteIcon = generateFaviconUrl(formData.value.siteUrl)
 }
 
 function handleSubmit() {
@@ -342,6 +420,43 @@ function handleSubmit() {
   min-height: 80px;
 }
 
+/* 图标输入组合样式 */
+.icon-input-group {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: stretch;
+}
+
+.icon-input-group input {
+  flex: 1;
+}
+
+.btn-generate-icon {
+  padding: var(--spacing-sm) var(--spacing-base);
+  background: var(--color-secondary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-base);
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+.btn-generate-icon:hover:not(:disabled) {
+  background: var(--color-secondary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-generate-icon:disabled {
+  background: var(--color-gray-300);
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+  transform: none;
+}
+
 .form-help {
   margin-top: var(--spacing-xs);
   font-size: var(--font-size-sm);
@@ -405,6 +520,16 @@ function handleSubmit() {
 
   .modal-footer {
     flex-direction: column;
+  }
+
+  /* 移动端图标输入组合样式 */
+  .icon-input-group {
+    flex-direction: column;
+  }
+
+  .btn-generate-icon {
+    min-width: auto;
+    width: 100%;
   }
 }
 </style>

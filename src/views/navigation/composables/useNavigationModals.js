@@ -68,7 +68,7 @@ export function useNavigationModals(crudOperations) {
   async function handleLinkSubmit(linkData) {
     try {
       if (editingLink.value) {
-        await updateLinkData(linkData, editingLink.value)
+        await updateLinkData(linkData)
       } else {
         await addLink(linkData)
       }

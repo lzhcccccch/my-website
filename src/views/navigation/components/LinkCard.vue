@@ -45,7 +45,7 @@ const emit = defineEmits(['edit', 'delete'])
 // 计算属性
 const faviconUrl = computed(() => {
   try {
-    const domain = new URL(props.link.siteUrl).hostname
+    const domain = new URL(props.link?.siteUrl).hostname
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
   } catch {
     return '/default-favicon.png'
@@ -54,19 +54,19 @@ const faviconUrl = computed(() => {
 
 const domain = computed(() => {
   try {
-    return new URL(props.link.siteUrl).hostname
+    return new URL(props.link?.siteUrl).hostname
   } catch {
-    return props.link.siteUrl
+    return props.link?.siteUrl
   }
 })
 
 const formattedDate = computed(() => {
-  if (!props.link.createdAt) return ''
+  if (!props.link?.createdTime) return ''
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
-  }).format(new Date(props.link.createdAt))
+  }).format(new Date(props.link.createdTime))
 })
 
 // 方法
@@ -79,7 +79,7 @@ function handleEdit() {
 }
 
 function handleDelete() {
-  emit('delete', props.link.id)
+  emit('delete', props.link?.id)
 }
 </script>
 
