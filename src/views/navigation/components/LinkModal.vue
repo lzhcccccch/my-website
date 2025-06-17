@@ -9,50 +9,50 @@
         <div class="form-group">
           <label for="siteName">网站名称</label>
           <input
-            type="text"
-            id="siteName"
-            v-model="formData.siteName"
-            placeholder="请输入网站名称"
-            maxlength="50"
+              type="text"
+              id="siteName"
+              v-model="formData.siteName"
+              placeholder="请输入网站名称"
+              maxlength="50"
           />
         </div>
         <div class="form-group">
           <label for="siteUrl">网站地址</label>
           <input
-            type="url"
-            id="siteUrl"
-            v-model="formData.siteUrl"
-            placeholder="https://example.com"
+              type="url"
+              id="siteUrl"
+              v-model="formData.siteUrl"
+              placeholder="https://example.com"
           />
         </div>
         <div class="form-group">
           <label for="siteIcon">网站图标</label>
           <input
-            type="text"
-            id="siteIcon"
-            v-model="formData.siteIcon"
-            placeholder="请输入图标URL或emoji"
-            maxlength="100"
+              type="text"
+              id="siteIcon"
+              v-model="formData.siteIcon"
+              placeholder="请输入图标URL或emoji"
+              maxlength="100"
           />
         </div>
         <div class="form-group">
           <label for="siteOverview">网站概览</label>
           <textarea
-            id="siteOverview"
-            v-model="formData.siteOverview"
-            placeholder="请输入网站概览描述"
-            rows="3"
-            maxlength="200"
+              id="siteOverview"
+              v-model="formData.siteOverview"
+              placeholder="请输入网站概览描述"
+              rows="3"
+              maxlength="200"
           ></textarea>
         </div>
         <div class="form-group">
           <label for="siteSort">网站排序</label>
           <input
-            type="number"
-            id="siteSort"
-            v-model.number="formData.siteSort"
-            placeholder="请输入排序号"
-            min="1"
+              type="number"
+              id="siteSort"
+              v-model.number="formData.siteSort"
+              placeholder="请输入排序号"
+              min="1"
           />
           <div class="form-help">
             {{ isEditing ? '修改排序号可调整网站显示顺序' : `默认排序号：${defaultSortValue}` }}
@@ -63,9 +63,9 @@
           <select id="linkCategory" v-model="formData.categoryId">
             <option value="">请选择分类</option>
             <option
-              v-for="category in availableCategories"
-              :key="category.id"
-              :value="category.id"
+                v-for="category in availableCategories"
+                :key="category.id"
+                :value="category.id"
             >
               {{ category.categoryName }}
             </option>
@@ -75,9 +75,9 @@
       <div class="modal-footer">
         <button @click="handleClose" class="btn btn-secondary">取消</button>
         <button
-          @click="handleSubmit"
-          class="btn btn-primary"
-          :disabled="!isFormValid || loading"
+            @click="handleSubmit"
+            class="btn btn-primary"
+            :disabled="!isFormValid || loading"
         >
           {{ loading ? '保存中...' : (isEditing ? '更新' : '添加') }}
         </button>
@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import {ref, computed, watch, onMounted} from 'vue';
 import {getAllCategories} from "../../../api/navigation.js";
 import {message} from "ant-design-vue";
 
@@ -118,6 +118,7 @@ const emit = defineEmits(['close', 'submit'])
 
 // 表单数据
 const formData = ref({
+  id: null,
   siteName: '',
   siteUrl: '',
   siteIcon: '',
@@ -137,23 +138,25 @@ const defaultSortValue = computed(() => {
 
   // 从父组件传入的categories中找到对应分类的网站数量
   const currentCategory = props.categories.find(cat => String(cat.id) === String(formData.value.categoryId))
-  if (currentCategory && currentCategory.links && Array.isArray(currentCategory.links)) {
-    return currentCategory.links.length + 1
+  console.log('currentCategory', currentCategory);
+  if (currentCategory && currentCategory?.websiteList && Array.isArray(currentCategory.websiteList)) {
+    return currentCategory.websiteList.length + 1
   }
   return 1
 })
 
 const isFormValid = computed(() => {
-  return formData.value.siteName.trim() &&
-         formData.value.siteUrl.trim() &&
-         formData.value.categoryId &&
-         isValidUrl(formData.value.siteUrl)
+  return (formData.value.siteName || '').trim() &&
+      (formData.value.siteUrl || '').trim() &&
+      (formData.value.categoryId || '') &&
+      isValidUrl(formData.value.siteUrl)
 })
 
 // 监听链接数据变化
 watch(() => props.link, (newLink) => {
   if (newLink) {
     formData.value = {
+      id: props.link.id,
       siteName: newLink.siteName || '',
       siteUrl: newLink.siteUrl || '',
       siteIcon: newLink.siteIcon || '',
@@ -164,7 +167,7 @@ watch(() => props.link, (newLink) => {
   } else {
     resetForm()
   }
-}, { immediate: true })
+}, {immediate: true})
 
 // 监听显示状态
 watch(() => props.show, (show) => {
@@ -234,10 +237,10 @@ function handleSubmit() {
 
   emit('submit', {
     ...formData.value,
-    siteName: formData.value.siteName.trim(),
-    siteUrl: formData.value.siteUrl.trim(),
-    siteIcon: formData.value.siteIcon.trim(),
-    siteOverview: formData.value.siteOverview.trim()
+    siteName: (formData.value.siteName || '').trim(),
+    siteUrl: (formData.value.siteUrl || '').trim(),
+    siteIcon: (formData.value.siteIcon || '').trim(),
+    siteOverview: (formData.value.siteOverview || '').trim()
   })
 }
 </script>

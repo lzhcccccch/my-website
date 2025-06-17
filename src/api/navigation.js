@@ -43,8 +43,8 @@ export function createLink(linkData) {
 /**
  * 更新链接
  */
-export function updateLink(id, updateData) {
-    return api.put(`/navigationWebsite/${id}`, updateData);
+export function updateLink(updateData) {
+    return api.put(`/navigationWebsite/update`, updateData);
 }
 
 /**
