@@ -81,9 +81,9 @@ const faviconUrl = computed(() => {
 
 const domain = computed(() => {
   try {
-    return new URL(props.link.url).hostname
+    return new URL(props.link.siteUrl).hostname
   } catch {
-    return props.link.url
+    return props.link.siteUrl
   }
 })
 

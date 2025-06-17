@@ -20,6 +20,13 @@ export function getAllLinks() {
 }
 
 /**
+ * 获取分类及其下的网站列表
+ */
+export function getCategoriesWithWebsites() {
+    return api.get('/navigationCategory/listWithWebsites');
+}
+
+/**
  * 创建新分类
  */
 export async function createCategory(categoryData) {

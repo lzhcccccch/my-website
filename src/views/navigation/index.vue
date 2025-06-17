@@ -159,7 +159,7 @@ import { ref, computed, onMounted } from 'vue'
 // onMounted: 组件挂载后执行的生命周期钩子
 
 // ===== API 函数导入 =====
-import { getAllCategories, getAllLinks, createCategory, createLink, updateLink, deleteLink, updateLinksOrder } from '../../api/navigation.js'
+import { getCategoriesWithWebsites, createCategory, createLink, updateLink, deleteLink, updateLinksOrder } from '../../api/navigation.js'
 // 这些函数负责与后端API通信，执行增删改查操作
 
 // ===== 子组件导入 =====
@@ -210,55 +210,45 @@ const notification = ref({
 
 // ===== 📥 数据加载函数 =====
 /**
- * 🏷️ 加载分类数据
+ * 🏷️ 加载分类和网站数据
  *
  * 📝 功能说明：
- * 1. 调用API获取所有分类数据
+ * 1. 调用新的API获取分类及其下的网站数据
  * 2. 在分类列表前添加"全部"选项，方便用户查看所有链接
- * 3. 错误处理：如果加载失败，显示错误通知
+ * 3. 将网站数据扁平化存储到links数组中，保持向后兼容
+ * 4. 错误处理：如果加载失败，显示错误通知
  *
  * 🔄 调用时机：
  * - 页面初始化时
  * - 添加新分类后
  * - 删除分类后
+ * - 添加新链接后
+ * - 更新链接后
+ * - 删除链接后
  */
-async function loadCategories() {
+async function loadCategoriesWithWebsites() {
   try {
-    // 调用API获取分类数据
-    const data = await getAllCategories()
+    // 调用新的API获取分类及其下的网站数据
+    const data = await getCategoriesWithWebsites()
 
     // 构建分类列表：在真实分类前添加"全部"选项
     categories.value = [
       { id: 'all', categoryName: '全部', categorySort: 0 }, // 特殊的"全部"选项
       ...data  // 展开运算符，将API返回的分类数据添加到数组中
     ]
-  } catch (error) {
-    // 错误处理：显示用户友好的错误信息
-    showNotification(error.message || '加载分类失败', 'error')
-  }
-}
 
-/**
- * 🔗 加载链接数据
- *
- * 📝 功能说明：
- * 1. 调用API获取所有链接数据
- * 2. 更新本地链接状态
- * 3. 错误处理：如果加载失败，显示错误通知
- *
- * 🔄 调用时机：
- * - 页面初始化时
- * - 添加新链接后
- * - 更新链接后
- * - 删除链接后
- */
-async function loadLinks() {
-  try {
-    // 调用API获取链接数据并更新本地状态
-    links.value = await getAllLinks();
+    // 将所有网站数据扁平化存储到links数组中，保持向后兼容
+    const allLinks = []
+    data.forEach(category => {
+      if (category.websiteList && category.websiteList.length > 0) {
+        allLinks.push(...category.websiteList)
+      }
+    })
+    links.value = allLinks
+
   } catch (error) {
     // 错误处理：显示用户友好的错误信息
-    showNotification(error.message || '加载链接失败', 'error')
+    showNotification(error.message || '加载数据失败', 'error')
   }
 }
 
@@ -483,7 +473,7 @@ async function addCategory(categoryData) {
     const newCat = await createCategory(categoryData)
 
     // 重新加载分类数据，确保UI显示最新数据
-    await loadCategories()
+    await loadCategoriesWithWebsites()
 
     // 显示成功通知给用户
     showNotification(`分类 "${newCat.name || categoryData.name}" 添加成功！`, 'success')
@@ -523,7 +513,7 @@ async function deleteCategory(categoryId) {
       // await api.delete(`/navigationCategory/${categoryId}`)
 
       // 重新加载所有数据，确保UI同步
-      await Promise.all([loadCategories(), loadLinks()])
+      await loadCategoriesWithWebsites()
 
       // UI状态处理：如果删除的是当前选中的分类，切换到"全部"视图
       if (selectedCategory.value === categoryId) {
@@ -546,9 +536,9 @@ async function deleteCategory(categoryId) {
  * 🔗 添加新链接
  *
  * @param {Object} linkData - 链接数据对象
- * @param {string} linkData.title - 链接标题
- * @param {string} linkData.url - 链接地址
- * @param {string} linkData.description - 链接描述
+ * @param {string} linkData.siteName - 链接标题
+ * @param {string} linkData.siteUrl - 链接地址
+ * @param {string} linkData.siteOverview - 链接描述
  * @param {string|number} linkData.categoryId - 所属分类ID
  *
  * 📝 执行流程：
@@ -558,7 +548,7 @@ async function deleteCategory(categoryId) {
  * 4. 显示成功通知
  *
  * 🔢 排序逻辑：
- * 新链接会被放在该分类的最后位置（sortOrder = 最大值 + 1）
+ * 新链接会被放在该分类的最后位置（siteSort = 最大值 + 1）
  */
 async function addLink(linkData) {
   try {
@@ -569,21 +559,21 @@ async function addLink(linkData) {
     const categoryLinks = links.value.filter(link => link.categoryId === linkData.categoryId)
 
     // 2. 计算最大排序号，新链接排在最后
-    const maxSortOrder = categoryLinks.length > 0
-      ? Math.max(...categoryLinks.map(link => link.sortOrder || 0))  // 找到最大排序号
+    const maxSiteSort = categoryLinks.length > 0
+      ? Math.max(...categoryLinks.map(link => link.siteSort || 0))  // 找到最大排序号
       : 0  // 如果分类为空，从0开始
 
     // 3. 调用API创建链接，设置排序号为最大值+1
     const newLinkData = await createLink({
       ...linkData,                // 展开用户输入的链接数据
-      sortOrder: maxSortOrder + 1 // 设置排序号
+      siteSort: maxSiteSort + 1 // 设置排序号
     })
 
     // 重新加载链接数据，确保UI显示最新状态
-    await loadLinks()
+    await loadCategoriesWithWebsites()
 
     // 显示成功通知
-    showNotification(`链接 "${newLinkData.siteName || linkData.title}" 添加成功！`, 'success')
+    showNotification(`链接 "${newLinkData.siteName || linkData.siteName}" 添加成功！`, 'success')
   } catch (error) {
     // 错误处理
     showNotification(error.message || '添加链接失败', 'error')
@@ -605,7 +595,7 @@ async function addLink(linkData) {
  * 4. 显示操作结果
  *
  * 🔢 排序处理：
- * 更新时保持原有的sortOrder，不改变链接在分类中的位置
+ * 更新时保持原有的siteSort，不改变链接在分类中的位置
  */
 async function updateLinkData(linkData) {
   // 安全检查：确保有正在编辑的链接
@@ -617,14 +607,14 @@ async function updateLinkData(linkData) {
     // 调用API更新链接
     await updateLink(editingLink.value.id, {
       ...linkData,                           // 展开新的链接数据
-      sortOrder: editingLink.value.sortOrder // 保持原有的排序位置
+      siteSort: editingLink.value.siteSort // 保持原有的排序位置
     })
 
     // 重新加载链接数据，确保UI同步
-    await loadLinks()
+    await loadCategoriesWithWebsites()
 
     // 显示成功通知
-    showNotification(`链接 "${linkData.title}" 更新成功！`, 'success')
+    showNotification(`链接 "${linkData.siteName}" 更新成功！`, 'success')
   } catch (error) {
     // 错误处理
     showNotification(error.message || '更新链接失败', 'error')
@@ -661,10 +651,10 @@ async function deleteLinkById(linkId) {
       await deleteLink(linkId)
 
       // 重新加载链接数据，确保UI同步
-      await loadLinks()
+      await loadCategoriesWithWebsites()
 
       // 显示成功通知
-      showNotification(`链接 "${linkToDelete?.title || ''}" 删除成功！`, 'success')
+      showNotification(`链接 "${linkToDelete?.siteName || ''}" 删除成功！`, 'success')
     } catch (error) {
       // 错误处理
       showNotification(error.message || '删除链接失败', 'error')
@@ -748,7 +738,7 @@ function hideNotification() {
  *
  * 🔢 排序逻辑：
  * 1. 获取分类下的所有链接
- * 2. 按当前sortOrder排序
+ * 2. 按当前siteSort排序
  * 3. 提取链接ID数组
  * 4. 调用API保存新的排序
  *
@@ -759,10 +749,10 @@ async function saveLinkOrder(categoryId, newIndex, oldIndex) {
   try {
     isLoading.value = true  // 显示加载状态
 
-    // 获取当前分类的所有链接并按sortOrder排序
+    // 获取当前分类的所有链接并按siteSort排序
     const categoryLinks = links.value
       .filter(link => link.categoryId === categoryId)  // 筛选出当前分类的链接
-      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))  // 按排序字段升序排列
+      .sort((a, b) => (a.siteSort || 0) - (b.siteSort || 0))  // 按排序字段升序排列
 
     // 如果分类为空，直接返回
     if (categoryLinks.length === 0) return
@@ -772,10 +762,10 @@ async function saveLinkOrder(categoryId, newIndex, oldIndex) {
 
     // 调试信息：在控制台输出排序详情
     console.log(`保存分类 ${categoryId} 的链接排序:`, linkIds)
-    console.log('更新后的sortOrder:', categoryLinks.map(l => ({
+    console.log('更新后的siteSort:', categoryLinks.map(l => ({
       id: l.id,
-      title: l.title,
-      sortOrder: l.sortOrder
+      siteName: l.siteName,
+      siteSort: l.siteSort
     })))
 
     // 调用API保存新的排序到后端
@@ -809,7 +799,7 @@ async function saveLinkOrder(categoryId, newIndex, oldIndex) {
  * 🔢 排序逻辑：
  * 1. 找到当前链接在分类中的位置
  * 2. 与上一个链接交换位置
- * 3. 重新计算所有链接的sortOrder
+ * 3. 重新计算所有链接的siteSort
  * 4. 保存新的排序到后端
  *
  * 🛡️ 边界处理：
@@ -830,9 +820,9 @@ function moveLinkUp(categoryId, linkId) {
   categoryLinks[linkIndex] = categoryLinks[linkIndex - 1]
   categoryLinks[linkIndex - 1] = temp
 
-  // 重新计算sortOrder：按新的位置重新分配排序号
+  // 重新计算siteSort：按新的位置重新分配排序号
   categoryLinks.forEach((link, index) => {
-    link.sortOrder = index + 1  // sortOrder从1开始
+    link.siteSort = index + 1  // siteSort从1开始
   })
 
   // 保存排序变化到后端
@@ -851,7 +841,7 @@ function moveLinkUp(categoryId, linkId) {
  * 🔢 排序逻辑：
  * 1. 找到当前链接在分类中的位置
  * 2. 与下一个链接交换位置
- * 3. 重新计算所有链接的sortOrder
+ * 3. 重新计算所有链接的siteSort
  * 4. 保存新的排序到后端
  *
  * 🛡️ 边界处理：
@@ -872,9 +862,9 @@ function moveLinkDown(categoryId, linkId) {
   categoryLinks[linkIndex] = categoryLinks[linkIndex + 1]
   categoryLinks[linkIndex + 1] = temp
 
-  // 重新计算sortOrder：按新的位置重新分配排序号
+  // 重新计算siteSort：按新的位置重新分配排序号
   categoryLinks.forEach((link, index) => {
-    link.sortOrder = index + 1  // sortOrder从1开始
+    link.siteSort = index + 1  // siteSort从1开始
   })
 
   // 保存排序变化到后端
@@ -901,11 +891,8 @@ function moveLinkDown(categoryId, linkId) {
 onMounted(async () => {
   console.log('🧭 个人导航站页面已加载')
 
-  // 并行加载分类和链接数据，提高加载效率
-  await Promise.all([
-    loadCategories(),  // 加载分类数据
-    loadLinks()        // 加载链接数据
-  ])
+  // 使用新的API加载分类和网站数据
+  await loadCategoriesWithWebsites()
 
   // 输出加载结果（categories.value.length - 1 是因为要排除"全部"选项）
   console.log(`✅ 加载完成: ${categories.value.length - 1} 个分类, ${links.value.length} 个链接`)
