@@ -1,5 +1,5 @@
 /**
- * 心情随想录功能模块类型定义
+ * 拾光集功能模块类型定义
  * 定义该功能模块使用的所有类型和接口
  */
 
@@ -73,9 +73,9 @@ export const ApiEndpoints = {
  * 本地存储键名
  */
 export const StorageKeys = {
-  THOUGHTS: 'mood_thoughts',
-  USER_PREFERENCES: 'mood_journal_preferences',
-  DRAFT_THOUGHT: 'mood_journal_draft'
+  THOUGHTS: 'gleaning_light_thoughts',
+  USER_PREFERENCES: 'gleaning_light_preferences',
+  DRAFT_THOUGHT: 'gleaning_light_draft'
 }
 
 /**
@@ -115,7 +115,7 @@ export const CssClasses = {
  * 路由名称常量
  */
 export const RouteNames = {
-  MOOD_JOURNAL: 'MoodJournal',
+  GLEANING_LIGHT: 'GleaningLight',
   THOUGHT_DETAIL: 'ThoughtDetail',
   THOUGHT_EDIT: 'ThoughtEdit'
 }

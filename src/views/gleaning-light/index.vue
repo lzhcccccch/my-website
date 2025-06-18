@@ -3,7 +3,7 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-content">
-        <h1>💭 心情随想录</h1>
+        <h1>✨ 拾光集</h1>
         <p>记录每一天的心情和想法，留住美好时光</p>
 
         <!-- 添加新想法按钮 -->
@@ -132,7 +132,7 @@ import {
 } from './data/mockThoughts'
 
 /**
- * 心情随想录主页组件
+ * 拾光集主页组件
  * 提供完整的CRUD操作、搜索筛选、心情追踪和标签管理功能
  */
 
@@ -366,7 +366,7 @@ function hideNotification() {
  * 组件挂载时的初始化
  */
 onMounted(() => {
-  console.log('心情随想录页面已加载')
+  console.log('拾光集页面已加载')
 })
 </script>
 

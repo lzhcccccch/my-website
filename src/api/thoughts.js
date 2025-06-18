@@ -1,10 +1,10 @@
 /**
- * 心情随想录 API 服务模块
+ * 拾光集 API 服务模块
  * 提供想法的 CRUD 操作接口，使用模拟数据
  * 可以轻松替换为真实的后端 API 调用
  */
 
-import { defaultThoughts, createThoughtObject, validateThoughtData } from '../views/mood-journal/data/mockThoughts'
+import { defaultThoughts, createThoughtObject, validateThoughtData } from '../views/gleaning-light/data/mockThoughts'
 import { STORAGE_KEYS } from './config.js'
 
 // 模拟网络延迟
