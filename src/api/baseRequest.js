@@ -180,6 +180,6 @@ export default api
 
 // 重新导出各个模块的 API 函数，方便统一导入
 export * as auth from './auth.js'
-export * as thoughts from './thoughts.js'
+export * as gleaningLight from './thoughts.js'
 export * as navigation from './navigation.js'
 export * as wordCards from './wordCards.js'

@@ -13,7 +13,7 @@
           <router-link to="/navigation">导航站</router-link>
         </li>
         <li>
-          <router-link to="/mood-journal">心情随想录</router-link>
+          <router-link to="/gleaning-light">拾光集</router-link>
         </li>
         <li>
           <router-link to="/word-cards">单词卡片</router-link>

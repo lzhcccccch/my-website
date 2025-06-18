@@ -1,10 +1,10 @@
 /**
- * 心情随想录功能模块入口文件
+ * 拾光集功能模块入口文件
  * 统一导出该功能模块的所有组件、服务和工具
  */
 
 // 主要组件
-export { default as MoodJournal } from './index.vue'
+export { default as GleaningLight } from './index.vue'
 export { default as AddEntryForm } from './components/AddEntryForm.vue'
 
 // 数据和工具函数
@@ -58,15 +58,15 @@ export {
  * 功能模块元信息
  */
 export const FeatureInfo = {
-  name: 'mood-journal',
+  name: 'gleaning-light',
   version: '1.0.0',
-  description: '心情随想录 - 记录每一天的心情和想法',
+  description: '拾光集 - 记录每一天的心情和想法',
   author: 'Stack Breeze',
   dependencies: ['vue', 'vue-router'],
   routes: [
     {
-      path: '/mood-journal',
-      name: 'MoodJournal',
+      path: '/gleaning-light',
+      name: 'GleaningLight',
       component: () => import('./index.vue')
     }
   ]
@@ -90,19 +90,19 @@ export const FeatureConfig = {
   
   // 功能模块的路由配置
   routing: {
-    basePath: '/mood-journal',
+    basePath: '/gleaning-light',
     requiresAuth: false // 根据需要调整
   },
-  
+
   // 功能模块的存储配置
   storage: {
-    namespace: 'mood-journal',
+    namespace: 'gleaning-light',
     keys: ['thoughts', 'preferences', 'drafts']
   },
-  
+
   // 功能模块的API配置
   api: {
-    baseUrl: '/api/mood-journal',
+    baseUrl: '/api/gleaning-light',
     endpoints: {
       thoughts: '/thoughts',
       moods: '/moods',
@@ -116,45 +116,45 @@ export const FeatureConfig = {
  * @param {Object} app - Vue应用实例
  * @param {Object} options - 初始化选项
  */
-export function initializeMoodJournal(app, options = {}) {
+export function initializeGleaningLight(app, options = {}) {
   const config = { ...FeatureConfig, ...options }
-  
+
   // 注册全局组件（如果需要）
   if (config.registerGlobalComponents) {
-    app.component('MoodJournal', MoodJournal)
+    app.component('GleaningLight', GleaningLight)
     app.component('AddEntryForm', AddEntryForm)
   }
-  
+
   // 初始化存储
   if (config.initializeStorage) {
     // 初始化本地存储
-    console.log('初始化心情随想录存储...')
+    console.log('初始化拾光集存储...')
   }
-  
+
   // 注册事件监听器
   if (config.registerEventListeners) {
     // 注册全局事件监听器
-    console.log('注册心情随想录事件监听器...')
+    console.log('注册拾光集事件监听器...')
   }
-  
-  console.log('心情随想录功能模块初始化完成')
+
+  console.log('拾光集功能模块初始化完成')
   return config
 }
 
 /**
  * 功能模块清理函数
  */
-export function cleanupMoodJournal() {
+export function cleanupGleaningLight() {
   // 清理事件监听器
   // 清理定时器
   // 清理缓存
-  console.log('心情随想录功能模块清理完成')
+  console.log('拾光集功能模块清理完成')
 }
 
 /**
  * 获取功能模块状态
  */
-export function getMoodJournalStatus() {
+export function getGleaningLightStatus() {
   return {
     enabled: FeatureConfig.enabled,
     initialized: true,
@@ -164,4 +164,4 @@ export function getMoodJournalStatus() {
 }
 
 // 默认导出主组件
-export default MoodJournal
+export default GleaningLight

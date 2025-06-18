@@ -55,12 +55,12 @@
 
         <div
           class="feature-card"
-          @click="navigateTo('/mood-journal')"
+          @click="navigateTo('/gleaning-light')"
           :class="{ 'locked': !isAuthenticated }"
         >
-          <div class="feature-icon">📝</div>
+          <div class="feature-icon">✨</div>
           <div class="feature-content">
-            <h3>心情随想录</h3>
+            <h3>拾光集</h3>
             <p>记录每一天的心情和想法，留下生活的美好瞬间</p>
             <div class="feature-tags">
               <span class="tag">日记记录</span>

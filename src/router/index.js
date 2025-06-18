@@ -13,7 +13,7 @@ const Register = () => import('../views/auth/Register.vue')
 
 // 功能模块组件 - 迁移回views结构
 const Navigation = () => import('../views/navigation/index.vue')
-const MoodJournal = () => import('../views/mood-journal/index.vue')
+const GleaningLight = () => import('../views/gleaning-light/index.vue')
 const WordCards = () => import('../views/word-cards/index.vue')
 
 // 路由配置
@@ -58,11 +58,11 @@ const routes = [
         }
     },
     {
-        path: '/mood-journal',
-        name: 'MoodJournal',
-        component: MoodJournal,
+        path: '/gleaning-light',
+        name: 'GleaningLight',
+        component: GleaningLight,
         meta: {
-            title: '心情随想录',
+            title: '拾光集',
             description: '记录每一天的心情和想法',
             requiresAuth: true // 需要登录才能访问
         }
@@ -80,6 +80,10 @@ const routes = [
     {
         path: '/word',
         redirect: '/word-cards' // 重定向旧路径到新路径
+    },
+    {
+        path: '/mood-journal',
+        redirect: '/gleaning-light' // 重定向旧路径到新路径
     },
     {
         // 404 页面 - 处理未匹配的路由

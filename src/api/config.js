@@ -24,11 +24,11 @@ export const STORAGE_KEYS = {
     USER: 'user'
   },
 
-  // 心情随想录
+  // 拾光集
   THOUGHTS: {
     DATA: 'thoughts',
-    PREFERENCES: 'mood_journal_preferences',
-    DRAFT: 'mood_journal_draft'
+    PREFERENCES: 'gleaning_light_preferences',
+    DRAFT: 'gleaning_light_draft'
   },
 
   // 个人导航站
